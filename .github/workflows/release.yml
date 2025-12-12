@@ -127,8 +127,44 @@ jobs:
           RENDERED_PROVIDER_NAME: "NVIDIA Mission Control autonomous hardware recovery"
           PROVIDER_SHORT_NAME: "mcahr"
           ENV_VARS_NAME_PREFIX: "MCAHR"
-          TF_LOG_FILE: "/tmp/tf_provider.log"
-          DEFAULT_USER_NAME: "NVIDIA"
+
+      - name: Upload Release Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist/
+
+      - name: Publish to NGC
+        if: success()
+        env:
+          NGC_API_KEY_CI: ${{ secrets.NGC_API_KEY_CI }}
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "Publishing version $VERSION to NGC..."
+          
+          # Bundle all artifacts from dist/ into a single tarball
+          ARCHIVE_NAME="release-${VERSION}.tar.gz"
+          echo "Bundling all artifacts from dist/ into $ARCHIVE_NAME..."
+          tar -czf "$ARCHIVE_NAME" -C dist .
+          
+          echo "Created $ARCHIVE_NAME"
+          
+          # Make the upload script executable.
+          # In the generated target repository, this script is located at .github/workflows/upload_binary.sh
+          SCRIPT_PATH=".github/workflows/upload_binary.sh"
+          
+          if [ ! -f "$SCRIPT_PATH" ]; then
+             echo "Error: Upload script not found at $SCRIPT_PATH"
+             ls -R .github/
+             exit 1
+          fi
+          
+          chmod +x "$SCRIPT_PATH"
+          
+          # Upload to NGC
+          # Resource path: nvidian/shoreline/mcahr_terraform_provider
+          "$SCRIPT_PATH" nvidian/shoreline/mcahr_terraform_provider:${VERSION} --source "$ARCHIVE_NAME"
+
       -
         name: Clean up GPG
         # Always run this step, even if goreleaser fails
