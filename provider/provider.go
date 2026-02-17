@@ -2106,7 +2106,11 @@ func ResourceObjectSetFields(typ string, attrs map[string]interface{}, objectDef
 			// Handle GetOk() bug...
 			if isCreate {
 				if defowlt == nil || val == defowlt {
-					continue
+					// Only for dashboard.identifiers: always send the field so backend receives it ([] or with values).
+					// GetOk() returns exists=false for empty lists, so we would otherwise skip sending.
+					if !(typ == "dashboard" && key == "identifiers") {
+						continue
+					}
 				}
 			} else {
 				continue
