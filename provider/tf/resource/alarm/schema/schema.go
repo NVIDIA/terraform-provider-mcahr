@@ -49,7 +49,7 @@ func (s *AlarmSchema) GetSchema() schema.Schema {
 
 	// Required attributes
 	builder.AddAttribute("name", schema.StringAttribute{
-		MarkdownDescription: "The name/symbol for the object within Shoreline and the op language (must be unique, only alphanumeric/underscore).",
+		MarkdownDescription: "The name/symbol for the object within backend and the op language (must be unique, only alphanumeric/underscore).",
 		Required:            true,
 		PlanModifiers:       []planmodifier.String{stringplanmodifier.RequiresReplace()},
 		Validators:          []validator.String{validators.NameValidator()},

@@ -3,12 +3,12 @@
 page_title: "mcahr_nvault_secret Resource - NVIDIA Mission Control autonomous hardware recovery"
 subcategory: ""
 description: |-
-  Shoreline nvault_secret. A secret managed by NVault. Creating it requires an active NVault integration to be configured and enabled.
+  NVault secret. A secret managed by NVault. Creating it requires an active NVault integration to be configured and enabled.
 ---
 
 # mcahr_nvault_secret (Resource)
 
-Shoreline nvault_secret. A secret managed by NVault. Creating it requires an active NVault integration to be configured and enabled.
+NVault secret. A secret managed by NVault. Creating it requires an active NVault integration to be configured and enabled.
 
 
 
@@ -17,7 +17,7 @@ Shoreline nvault_secret. A secret managed by NVault. Creating it requires an act
 
 ### Required
 
-- `integration_name` (String) The name/symbol of a Shoreline integration.
-- `name` (String) The name/symbol for the object within Shoreline and the op language (must be unique, only alphanumeric/underscore).
+- `integration_name` (String) The name/symbol of a platform integration.
+- `name` (String) The name/symbol for the object within backend and the op language (must be unique, only alphanumeric/underscore).
 - `vault_secret_key` (String) The specific key within the secret data to retrieve.
 - `vault_secret_path` (String) The full path in Vault where the secret is stored. It includes the mount path and the subpath. It tells Vault where to look for the secret.

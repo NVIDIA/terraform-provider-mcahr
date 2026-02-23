@@ -118,7 +118,7 @@ func TestSystemSettingsTranslatorCommon_ToAPIModel_WithStringArrays(t *testing.T
 		"approval_editable_allowed_resource_query_enabled=true, " +
 		"approval_allow_individual_notification=true, " +
 		"approval_optional_request_ticket_url=false, " +
-		"time_trigger_permissions_user=\"Shoreline\", " +
+		"time_trigger_permissions_user=\"test_user\", " +
 		"external_audit_storage_enabled=false, " +
 		"external_audit_storage_type=\"ELASTIC\", " +
 		"external_audit_storage_batch_period_sec=5, " +
@@ -202,7 +202,7 @@ func createTestSystemSettingsTFModelWithArrays() *systemsettingstf.SystemSetting
 		ApprovalEditableAllowedResourceQueryEnabled: types.BoolValue(true),
 		ApprovalAllowIndividualNotification:         types.BoolValue(true),
 		ApprovalOptionalRequestTicketURL:            types.BoolValue(false),
-		TimeTriggerPermissionsUser:                  types.StringValue("Shoreline"),
+		TimeTriggerPermissionsUser:                  types.StringValue("test_user"),
 		ExternalAuditStorageEnabled:                 types.BoolValue(false),
 		ExternalAuditStorageType:                    types.StringValue("ELASTIC"),
 		ExternalAuditStorageBatchPeriodSec:          types.Int64Value(5),

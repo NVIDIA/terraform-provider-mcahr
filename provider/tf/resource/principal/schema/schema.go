@@ -38,7 +38,7 @@ var _ coreschema.ResourceSchema = &PrincipalSchema{}
 func (s *PrincipalSchema) GetSchema() schema.Schema {
 
 	builder := schemabuilder.NewSchemaBuilder()
-	builder.AddMarkdownDescription("Shoreline principal. An authorization group (e.g. Okta groups). Note: Admin privilege (in Shoreline) to create principal objects.")
+	builder.AddMarkdownDescription("Principal. An authorization group (e.g. Okta groups). Note: Admin privilege (in the platform) is required to create principal objects.")
 
 	// Required attributes
 	builder.AddAttribute("name", schema.StringAttribute{

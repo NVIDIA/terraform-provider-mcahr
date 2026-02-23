@@ -55,7 +55,7 @@ func TestSystemSettingsTranslatorV1_ToTFModel_Success(t *testing.T) {
 	assert.Equal(t, true, result.ApprovalEditableAllowedResourceQueryEnabled.ValueBool())
 	assert.Equal(t, true, result.ApprovalAllowIndividualNotification.ValueBool())
 	assert.Equal(t, false, result.ApprovalOptionalRequestTicketURL.ValueBool())
-	assert.Equal(t, "Shoreline", result.TimeTriggerPermissionsUser.ValueString())
+	assert.Equal(t, "test_user", result.TimeTriggerPermissionsUser.ValueString())
 	assert.Equal(t, false, result.ExternalAuditStorageEnabled.ValueBool())
 	assert.Equal(t, "ELASTIC", result.ExternalAuditStorageType.ValueString())
 	assert.Equal(t, int64(5), result.ExternalAuditStorageBatchPeriodSec.ValueInt64())
@@ -129,7 +129,7 @@ func createFullSystemSettingsResponseV1() *systemsettingsapi.SystemSettingsRespo
 				ApprovalEditableAllowedResourceQueryEnabled: true,
 				ApprovalAllowIndividualNotification:         true,
 				ApprovalOptionalRequestTicketURL:            false,
-				TimeTriggerPermissionsUser:                  "Shoreline",
+				TimeTriggerPermissionsUser:                  "test_user",
 				ExternalAuditStorageEnabled:                 false,
 				ExternalAuditStorageType:                    "ELASTIC",
 				ExternalAuditStorageBatchPeriodSec:          5,

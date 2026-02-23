@@ -3,12 +3,12 @@
 page_title: "mcahr_principal Resource - NVIDIA Mission Control autonomous hardware recovery"
 subcategory: ""
 description: |-
-  Shoreline principal. An authorization group (e.g. Okta groups). Note: Admin privilege (in Shoreline) to create principal objects.
+  Principal. An authorization group (e.g. Okta groups). Note: Admin privilege (in the platform) is required to create principal objects.
 ---
 
 # mcahr_principal (Resource)
 
-Shoreline principal. An authorization group (e.g. Okta groups). Note: Admin privilege (in Shoreline) to create principal objects.
+Principal. An authorization group (e.g. Okta groups). Note: Admin privilege (in the platform) is required to create principal objects.
 
 
 

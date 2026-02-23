@@ -18,7 +18,7 @@ A condition that triggers Notebooks.
 ### Required
 
 - `fire_query` (String) The trigger condition for the TimeTrigger (e.g. 'every 5m').
-- `name` (String) The name/symbol for the trigger within Shoreline and the op language (must be unique, only alphanumeric/underscore).
+- `name` (String) The name/symbol for the trigger within backend and the op language (must be unique, only alphanumeric/underscore).
 
 ### Optional
 

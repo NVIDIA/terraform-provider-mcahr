@@ -107,7 +107,7 @@ resource "mcahr_alarm" "jvm_trace_heap_alarm" {
 ### Required
 
 - `fire_query` (String) The trigger condition for an Alarm (general expression) or the TimeTrigger (e.g. 'every 5m').
-- `name` (String) The name/symbol for the object within Shoreline and the op language (must be unique, only alphanumeric/underscore).
+- `name` (String) The name/symbol for the object within backend and the op language (must be unique, only alphanumeric/underscore).
 
 ### Optional
 

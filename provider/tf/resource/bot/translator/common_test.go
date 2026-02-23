@@ -50,7 +50,7 @@ func TestBotTranslatorCommon_ToAPIModel(t *testing.T) {
 				Description:            types.StringValue("Test bot description"),
 				Enabled:                types.BoolValue(true),
 				Family:                 types.StringValue("custom"),
-				TriggerSource:          types.StringValue("shoreline"),
+				TriggerSource:          types.StringValue("trigger_source"),
 				TriggerID:              types.StringValue("trigger_123"),
 				AlarmResourceQuery:     types.StringValue("host"),
 				CommunicationWorkspace: types.StringValue("ops-workspace"),
@@ -76,7 +76,7 @@ func TestBotTranslatorCommon_ToAPIModel(t *testing.T) {
 					"description=\"Test bot description\", " +
 					"enabled=true, " +
 					"family=\"custom\", " +
-					"trigger_source=\"shoreline\", " +
+					"trigger_source=\"trigger_source\", " +
 					"external_trigger_id=\"trigger_123\", " +
 					"alarm_resource_query=\"host\", " +
 					"communication_workspace=\"ops-workspace\", " +
@@ -91,7 +91,7 @@ func TestBotTranslatorCommon_ToAPIModel(t *testing.T) {
 					"description=\"Test bot description\", " +
 					"enabled=true, " +
 					"family=\"custom\", " +
-					"trigger_source=\"shoreline\", " +
+					"trigger_source=\"trigger_source\", " +
 					"external_trigger_id=\"trigger_123\", " +
 					"alarm_resource_query=\"host\", " +
 					"communication_workspace=\"ops-workspace\", " +
@@ -163,7 +163,7 @@ func TestBotTranslatorCommon_buildCreateStatement_AllFields(t *testing.T) {
 		Name:                   types.StringValue("full_bot"),
 		Command:                types.StringValue("if cpu_alarm then restart_action fi"),
 		Description:            types.StringValue("Full featured bot"),
-		TriggerSource:          types.StringValue("shoreline"),
+		TriggerSource:          types.StringValue("trigger_source"),
 		TriggerID:              types.StringValue("monitor_123"),
 		AlarmResourceQuery:     types.StringValue("host"),
 		CommunicationWorkspace: types.StringValue("workspace"),
@@ -185,7 +185,7 @@ func TestBotTranslatorCommon_buildCreateStatement_AllFields(t *testing.T) {
 		"description=\"Full featured bot\", " +
 		"enabled=false, " +
 		"family=\"\", " +
-		"trigger_source=\"shoreline\", " +
+		"trigger_source=\"trigger_source\", " +
 		"external_trigger_id=\"monitor_123\", " +
 		"alarm_resource_query=\"host\", " +
 		"communication_workspace=\"workspace\", " +

@@ -47,7 +47,7 @@ func TestBotTranslator_ToTFModel_Success(t *testing.T) {
 	assert.Equal(t, "<description>", result.Description.ValueString())
 	assert.True(t, result.Enabled.ValueBool())
 	assert.Equal(t, "custom", result.Family.ValueString())
-	assert.Equal(t, "SHORELINE", result.TriggerSource.ValueString())
+	assert.Equal(t, "trigger_source", result.TriggerSource.ValueString())
 	assert.Equal(t, "<external_trigger_id>", result.TriggerID.ValueString())
 	assert.Equal(t, "host", result.AlarmResourceQuery.ValueString())
 	assert.Equal(t, "<communication_workspace>", result.CommunicationWorkspace.ValueString())
@@ -129,7 +129,7 @@ func createFullBotResponseV2() *botapi.BotResponseAPIModel {
 				Items: []botapi.ConfigurationItem{
 					{
 						Config: botapi.BotConfig{
-							TriggerSource:       "SHORELINE",
+							TriggerSource:       "trigger_source",
 							AlarmResourceQuery:  "host",
 							IntegrationName:     "<integration_name>",
 							TriggerEntityName:   "full_alarm",

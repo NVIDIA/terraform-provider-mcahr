@@ -48,8 +48,8 @@ func createFullBotResponseV1() *botapi.BotResponseAPIModelV1 {
 					},
 					AlarmStatement:     "cpu_alarm",
 					ActionStatement:    "restart_service",
-					EventType:          "shoreline",
-					TriggerSource:      "shoreline",
+					EventType:          "trigger_source",
+					TriggerSource:      "trigger_source",
 					MonitorID:          "monitor_456",
 					ExternalTriggerID:  "monitor_456",
 					AlarmResourceQuery: "host",
@@ -109,7 +109,7 @@ func TestBotTranslatorV1_ToTFModel_Success(t *testing.T) {
 	assert.Equal(t, "monitoring", result.Family.ValueString())
 	assert.Equal(t, "ops-workspace", result.CommunicationWorkspace.ValueString())
 	assert.Equal(t, "alerts-channel", result.CommunicationChannel.ValueString())
-	assert.Equal(t, "shoreline", result.TriggerSource.ValueString())
+	assert.Equal(t, "trigger_source", result.TriggerSource.ValueString())
 	assert.Equal(t, "monitor_456", result.TriggerID.ValueString())
 	assert.Equal(t, "host", result.AlarmResourceQuery.ValueString())
 	assert.Equal(t, "datadog", result.IntegrationName.ValueString())

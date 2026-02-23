@@ -17,7 +17,7 @@ System-level settings. Note: there must only be one instance of this terraform r
 
 ### Required
 
-- `name` (String) The name/symbol for the object within Shoreline and the op language (must be unique, only alphanumeric/underscore). For system_settings, this must be 'system_settings'.
+- `name` (String) The name/symbol for the object within backend and the op language (must be unique, only alphanumeric/underscore). For system_settings, this must be 'system_settings'.
 
 ### Optional
 

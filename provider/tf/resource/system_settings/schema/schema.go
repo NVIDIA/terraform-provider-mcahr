@@ -45,7 +45,7 @@ func (s *SystemSettingsSchema) GetSchema() schema.Schema {
 	// Required attributes
 	builder.AddAttribute("name", schema.StringAttribute{
 		Required:            true,
-		MarkdownDescription: "The name/symbol for the object within Shoreline and the op language (must be unique, only alphanumeric/underscore). For system_settings, this must be 'system_settings'.",
+		MarkdownDescription: "The name/symbol for the object within backend and the op language (must be unique, only alphanumeric/underscore). For system_settings, this must be 'system_settings'.",
 		Validators: []validator.String{
 			validators.NameValidator(),
 			validators.ExactValueValidator("system_settings"),
@@ -146,7 +146,6 @@ func (s *SystemSettingsSchema) GetSchema() schema.Schema {
 		Computed:            true,
 		MarkdownDescription: "The user for time trigger permissions.",
 		PlanModifiers: []planmodifier.String{
-			defaultmodifiers.DefaultStringModifier("Shoreline"),
 			defaultmodifiers.IgnoreWhitespaceModifier(),
 		},
 	})

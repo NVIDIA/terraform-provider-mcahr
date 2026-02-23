@@ -35,11 +35,11 @@ var _ coreschema.ResourceSchema = &NVaultSecretSchema{}
 func (s *NVaultSecretSchema) GetSchema() schema.Schema {
 	builder := schemabuilder.NewSchemaBuilder()
 
-	builder.AddMarkdownDescription("Shoreline nvault_secret. A secret managed by NVault. Creating it requires an active NVault integration to be configured and enabled.")
+	builder.AddMarkdownDescription("NVault secret. A secret managed by NVault. Creating it requires an active NVault integration to be configured and enabled.")
 
 	builder.AddAttribute("name", schema.StringAttribute{
 		Required:            true,
-		MarkdownDescription: "The name/symbol for the object within Shoreline and the op language (must be unique, only alphanumeric/underscore).",
+		MarkdownDescription: "The name/symbol for the object within backend and the op language (must be unique, only alphanumeric/underscore).",
 		PlanModifiers:       []planmodifier.String{stringplanmodifier.RequiresReplace()},
 		Validators:          []validator.String{validators.NameValidator()},
 	})
@@ -56,7 +56,7 @@ func (s *NVaultSecretSchema) GetSchema() schema.Schema {
 
 	builder.AddAttribute("integration_name", schema.StringAttribute{
 		Required:            true,
-		MarkdownDescription: "The name/symbol of a Shoreline integration.",
+		MarkdownDescription: "The name/symbol of a platform integration.",
 	})
 
 	return builder.Build()

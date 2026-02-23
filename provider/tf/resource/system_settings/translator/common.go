@@ -78,7 +78,7 @@ func (t *SystemSettingsTranslatorCommon) buildUpdateStatement(requestContext *co
 		SetField("approval_editable_allowed_resource_query_enabled", tfModel.ApprovalEditableAllowedResourceQueryEnabled.ValueBool(), "approval_editable_allowed_resource_query_enabled").
 		SetField("approval_allow_individual_notification", tfModel.ApprovalAllowIndividualNotification.ValueBool(), "approval_allow_individual_notification").
 		SetField("approval_optional_request_ticket_url", tfModel.ApprovalOptionalRequestTicketURL.ValueBool(), "approval_optional_request_ticket_url").
-		SetStringField("time_trigger_permissions_user", tfModel.TimeTriggerPermissionsUser.ValueString(), "time_trigger_permissions_user").
+		MaybeSetStringField("time_trigger_permissions_user", tfModel.TimeTriggerPermissionsUser.ValueString(), "time_trigger_permissions_user", common.IsAttrKnown(tfModel.TimeTriggerPermissionsUser)).
 		SetField("external_audit_storage_enabled", tfModel.ExternalAuditStorageEnabled.ValueBool(), "external_audit_storage_enabled").
 		SetStringField("external_audit_storage_type", tfModel.ExternalAuditStorageType.ValueString(), "external_audit_storage_type").
 		SetField("external_audit_storage_batch_period_sec", tfModel.ExternalAuditStorageBatchPeriodSec.ValueInt64(), "external_audit_storage_batch_period_sec").

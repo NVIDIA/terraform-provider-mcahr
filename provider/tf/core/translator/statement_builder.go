@@ -62,6 +62,15 @@ func (b *StatementBuilder) SetStringField(apiFieldName string, value string, tfF
 	return b
 }
 
+// SetStringField adds a string field with automatic escaping
+func (b *StatementBuilder) MaybeSetStringField(apiFieldName string, value string, tfFieldName string, isKnown bool) *StatementBuilder {
+
+	if b.attrCompatibilityChecker.IsAttributeCompatible(tfFieldName) && isKnown {
+		b.fields.Set(apiFieldName, EscapeString(value))
+	}
+	return b
+}
+
 // SetCommandField adds a command field type string
 func (b *StatementBuilder) SetCommandField(apiFieldName string, value string, tfFieldName string) *StatementBuilder {
 

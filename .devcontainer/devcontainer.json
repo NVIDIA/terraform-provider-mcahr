@@ -2,7 +2,6 @@
     "build": {
         "dockerfile": "Dockerfile"
     },
-    // "runArgs": ["--network=shoreline-net"],
     "customizations": {
         "vscode": {
             "extensions": [
