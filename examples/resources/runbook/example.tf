@@ -1,4 +1,3 @@
-# DEPRECATED: Use the `cells` field instead
 resource "mcahr_runbook" "data_runbook" {
   name        = "data_runbook"
   description = "A sample runbook defined using the data field, which loads the runbook configuration from a separate JSON file."
@@ -105,6 +104,13 @@ resource "mcahr_runbook" "full_runbook" {
   filter_resource_to_action             = true
   enabled                               = true
   secret_names                          = ["secret_1", "secret_2"]
+  category                              = "general"
+  params_groups = {
+    "required" = []
+    "optional" = ["param_2", "param_4"]
+    "exported" = ["param_3"]
+    "external" = ["external_param_2", "external_param_3"]
+  }
 }
 
 

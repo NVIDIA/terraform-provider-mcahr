@@ -1,0 +1,48 @@
+---
+page_title: "{{ .ProviderShortName | trimspace }}_runbook Resource - {{ .ProviderName | trimspace }}"
+subcategory: ""
+description: |- Runbooks replace static runbooks by capturing interactive debug and remediation sessions in a convenient UI.
+---
+
+# {{ .ProviderShortName | trimspace }}_runbook (Resource)
+
+Through {{ .RenderedProviderName | trimspace }}'s web-based UI, Runbooks automatically capture an entire debug and remediation session -- which can optionally be associated with a specific Alarm -- and then be shared with other team members to streamline future incident response. With Runbooks you can:
+
+- Create a series of interactive Op statement cells allowing you to execute Op commands within your browser -- all without installing or configuring the local CLI.
+- Define and use dynamic parameters across Runbook Op cells.
+- Memorialize Runbooks with historical snapshots.
+- Add Markdown-based notes to inform operators how to use the Runbook.
+- Associate existing Alarms and Runbooks, allowing on-call members to click through to an interactive debugging and remediation Runbook directly from the triggered Alarm UI.
+
+## Required Properties
+
+Each Runbook uses a variety of properties to determine its behavior. The required properties when creating a Runbook are:
+
+- `name`: string - A unique symbol name for the Runbook object.
+- `cells`: list(object) - A list of cells represented by JSON objects. Cells may either be Op statement cells or Markdown cells.
+
+### Download a Runbook as a Terraform resource
+
+You can download an entire Runbook directly as a Terraform resource. This will allow you to just plug in the TF code into your infrastructure and deploy the runbook immediately.
+
+1. Click the **Actions** button on the right side of the active Runbook panel.
+2. Select the **Download Runbook as Terraform** button to download the full configuration of the current Runbook as a Terraform resource.
+
+## Defining a Runbook using the legacy `data` property
+
+You can also export the Runbook's configuration as a JSON file and then freely modify, share, and upload this Runbook at any time.
+
+Note: this way of defining is **deprecated**. Please refer to the above instructions using the new format.
+
+The following example creates a Runbook named `my_runbook`.
+
+1. Download a Runbook as JSON.
+2. Only keep the `cells`, `params`, `external_params`, and `enabled` fields fron the JSON file. Note: `externalParams` needs to be renamed to `external_params` in the JSON file.
+3. Save the Runbook JSON to local path within your Terraform project.
+4. Define a new `{{ .ProviderShortName | trimspace }}_runbook` Terraform resource in your Terraform configuration that points the `data` property to the correct local module path.
+
+   {{tffile "examples/resources/runbook/example.tf"}}
+
+-> See the {{ .RenderedProviderName | trimspace }} Runbooks Documentation for more info on creating and using Runbooks.
+
+{{ .SchemaMarkdown | trimspace }}

@@ -15,8 +15,8 @@ RUN git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.0 && \
 
 RUN /bin/bash -c "source $HOME/.asdf/asdf.sh && \
     asdf plugin add golang && \
-    asdf install golang 1.23.4 && \
-    asdf global golang 1.23.4"
+    asdf install golang 1.24.12 && \
+    asdf global golang 1.24.12"
 
     
 RUN /bin/bash -c "source $HOME/.asdf/asdf.sh && \

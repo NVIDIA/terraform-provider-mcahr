@@ -1,10 +1,10 @@
 ---
-page_title: 'mcahr_action Resource - terraform-provider-mcahr'
+page_title: 'NVIDIA Mission Control autonomous hardware recovery_action Resource - terraform-provider-mcahr'
 subcategory: ''
 description: |-
 ---
 
-# mcahr_action (Resource)
+# NVIDIA Mission Control autonomous hardware recovery_action (Resource)
 
 Actions execute shell commands on associated Resources. Whenever an Alarm fires, the associated Bot triggers the corresponding Action, closing the basic auto-remediation loop of
 NVIDIA Mission Control autonomous hardware recovery.
@@ -41,6 +41,13 @@ resource "mcahr_action" "cpu_threshold_action" {
   start_short_template    = "CPU threshold action short started"
   complete_short_template = "CPU threshold action short completed"
   error_short_template    = "CPU threshold action short failed"
+}
+
+resource "mcahr_action" "cpu_threshold_action_escaped_command" {
+  name = "cpu_threshold_action_escaped_command"
+  # Command should be escaped quotes
+  command     = "`echo \"test command escaped quotes\"`"
+  description = "Check CPU usage with escaped command"
 }
 ```
 
@@ -137,36 +144,31 @@ resource "mcahr_action" "jvm_trace_check_heap" {
 
 ### Required
 
-- `command` (String) A specific action to run.
-- `name` (String) The name/symbol for the object within NVIDIA Mission Control autonomous hardware recovery and the op language (must be unique, only alphanumeric/underscore).
+- `command` (String) The command to execute for this action
+- `name` (String) The name of the action
 
 ### Optional
 
-- `allowed_entities` (List of String) The list of users who can run an action or notebook. Any user can run if left empty.
-- `allowed_resources_query` (String) The list of resources on which an action or notebook can run. No restriction, if left empty. Defaults to ``.
-- `communication_channel` (String) A string value denoting the slack channel where notifications related to the object should be sent to. Defaults to ``.
-- `communication_workspace` (String) A string value denoting the slack workspace where notifications related to the object should be sent to. Defaults to ``.
-- `complete_long_template` (String) The long description of the Action's completion. Defaults to ``.
-- `complete_short_template` (String) The short description of the Action's completion. Defaults to ``.
-- `complete_title_template` (String) UI title of the Action's completion. Defaults to ``.
-- `description` (String) A user-friendly explanation of an object. Defaults to ``.
-- `editors` (List of String) List of users who can edit the object (with configure permission). Empty maps to all users.
-- `enabled` (Boolean) If the object is currently enabled or disabled. Defaults to `false`.
-- `error_long_template` (String) The long description of the Action's error condition. Defaults to ``.
-- `error_short_template` (String) The short description of the Action's error condition. Defaults to ``.
-- `error_title_template` (String) UI title of the Action's error condition. Defaults to ``.
-- `file_deps` (List of String) file object dependencies.
-- `params` (List of String) Named variables to pass to an object (e.g. an Action).
-- `res_env_var` (String) Result environment variable ... an environment variable used to output values through. Defaults to ``.
-- `resource_query` (String) A set of Resources (e.g. host, pod, container), optionally filtered on tags or dynamic conditions. Defaults to ``.
-- `resource_tags_to_export` (List of String)
-- `shell` (String) The commandline shell to use (e.g. /bin/sh). Defaults to ``.
-- `start_long_template` (String) The long description when starting the Action. Defaults to ``.
-- `start_short_template` (String) The short description when starting the Action. Defaults to ``.
-- `start_title_template` (String) UI title of the start of the Action. Defaults to ``.
-- `timeout` (Number) Maximum time to wait, in milliseconds. Defaults to `60000`.
-
-### Read-Only
-
-- `id` (String) The ID of this resource.
-- `type` (String) The type of object (i.e., Alarm, Action, Bot, Resource, or File).
+- `allowed_entities` (List of String) Allowed entities
+- `allowed_resources_query` (String) Query for allowed resources
+- `communication_channel` (String) Communication channel
+- `communication_workspace` (String) Communication workspace
+- `complete_long_template` (String, Deprecated) **Deprecated** Long template for completion notifications (deprecated - server controlled)
+- `complete_short_template` (String) Short template for completion notifications
+- `complete_title_template` (String) Title template for completion notifications
+- `description` (String) Description of the action
+- `editors` (List of String) Editors of the action
+- `enabled` (Boolean) Whether the action is enabled
+- `error_long_template` (String, Deprecated) **Deprecated** Long template for error notifications (deprecated - server controlled)
+- `error_short_template` (String) Short template for error notifications
+- `error_title_template` (String) Title template for error notifications
+- `file_deps` (List of String) File dependencies
+- `params` (List of String) Action parameters
+- `res_env_var` (String) Resource environment variable
+- `resource_query` (String) Query to identify resources
+- `resource_tags_to_export` (List of String) Resource tags to export
+- `shell` (String) Shell to use for command execution
+- `start_long_template` (String, Deprecated) **Deprecated** Long template for start notifications (deprecated - server controlled)
+- `start_short_template` (String) Short template for start notifications
+- `start_title_template` (String) Title template for start notifications
+- `timeout` (Number) Timeout for action execution

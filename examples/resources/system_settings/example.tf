@@ -14,7 +14,7 @@ resource "mcahr_system_settings" "system_settings" {
   approval_editable_allowed_resource_query_enabled = true
   approval_allow_individual_notification           = true
   approval_optional_request_ticket_url             = false
-  time_trigger_permissions_user                    = "NVIDIA"
+  time_trigger_permissions_user                    = "<user_name>"
   parallel_runs_fired_by_time_triggers             = 5
   # Audit
   external_audit_storage_enabled          = false

@@ -1,10 +1,10 @@
 ---
-page_title: 'mcahr_report_template Resource - terraform-provider-mcahr'
+page_title: 'NVIDIA Mission Control autonomous hardware recovery_report_template Resource - terraform-provider-mcahr'
 subcategory: ''
 description: |-
 ---
 
-# mcahr_report_template (Resource)
+# NVIDIA Mission Control autonomous hardware recovery_report_template (Resource)
 
 
 ## Properties
@@ -139,14 +139,14 @@ resource "mcahr_report_template" "minimal_report_template" {
 
 ### Required
 
-- `blocks` (String) The JSON encoded blocks of the report template.
-- `name` (String) The name/symbol for the object within NVIDIA Mission Control autonomous hardware recovery and the op language (must be unique, only alphanumeric/underscore).
+- `blocks` (String) The JSON encoded blocks of the report template
+- `name` (String) The name of the report template
 
 ### Optional
 
-- `links` (String) The JSON encoded links of a report template with other report templates. Defaults to `[]`.
+- `links` (String) The JSON encoded links of a report template with other report templates
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
-- `type` (String) The type of object (i.e., Alarm, Action, Bot, Resource, or File).
+- `blocks_full` (String) Complete blocks configuration returned by the API, including server-added fields. Shows diffs when external drift is detected and when configuration changes.
+- `links_full` (String) Complete links configuration returned by the API, including server-added fields. Shows diffs when external drift is detected and when configuration changes.

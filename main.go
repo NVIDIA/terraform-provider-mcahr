@@ -1,16 +1,28 @@
-// Copyright 2025 NVIDIA Corporation
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package main
 
 import (
+	"context"
 	"flag"
-	"os"
+	"log"
 
 	"terraform/terraform-provider/provider"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
-	//"github.com/hashicorp/terraform-provider-scaffolding/internal/provider"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
 
 // Run "go generate" to format example terraform files and generate the docs for the registry
@@ -18,10 +30,6 @@ import (
 // If you do not have OpenTofu installed, you can remove the formatting command, but its suggested to
 // ensure the documentation is formatted properly.
 //go:generate tofu fmt -recursive ./examples
-
-// Run the docs generation tool, check its repository for more information on how it works and how docs
-// can be customized.
-//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs --provider-name=terraform-provider-$PROVIDER_SHORT_NAME --rendered-provider-name=$RENDERED_PROVIDER_NAME --tf-version=1.5.7
 
 var (
 	// these will be set by the goreleaser configuration
@@ -31,7 +39,8 @@ var (
 	// goreleaser can also pass the specific commit if you want
 	// commit  string = ""
 
-	ProviderPath string = os.Getenv("PROVIDER_PATH")
+	// Provided in the compile time ldflags
+	ProviderPath string = ""
 )
 
 func main() {
@@ -40,11 +49,21 @@ func main() {
 	flag.BoolVar(&debugMode, "debug", false, "set to true to run the provider with support for debuggers like delve")
 	flag.Parse()
 
-	opts := &plugin.ServeOpts{
-		Debug:        debugMode,
-		ProviderFunc: provider.New(version),
-		ProviderAddr: ProviderPath,
+	ctx := context.Background()
+
+	SetupSdk(ctx, debugMode)
+}
+
+func SetupSdk(ctx context.Context, debugMode bool) {
+
+	opts := providerserver.ServeOpts{
+		Address: ProviderPath,
+		Debug:   debugMode,
 	}
 
-	plugin.Serve(opts)
+	err := providerserver.Serve(ctx, provider.NewFrameworkProvider(version), opts)
+	if err != nil {
+		log.Fatalf("Failed to serve provider: %v", err)
+	}
+
 }

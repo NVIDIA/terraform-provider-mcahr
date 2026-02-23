@@ -19,3 +19,10 @@ resource "mcahr_action" "cpu_threshold_action" {
   error_short_template    = "CPU threshold action short failed"
 }
 
+resource "mcahr_action" "cpu_threshold_action_escaped_command" {
+  name = "cpu_threshold_action_escaped_command"
+  # Command should be escaped quotes
+  command     = "`echo \"test command escaped quotes\"`"
+  description = "Check CPU usage with escaped command"
+}
+

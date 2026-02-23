@@ -5,6 +5,8 @@ subcategory: ''
 description: |-
 ---
 
+Notice: {{ .RenderedProviderName | trimspace }} Terraform Provider was built using the [Terraform Plugin Framework v1.15.0](https://github.com/hashicorp/terraform-plugin-framework/releases/tag/v1.15.0).
+
 # {{ .RenderedProviderName }} Provider
 
 {{ .RenderedProviderName | trimspace }} provides real-time, automatic remediation for cloud operations.
@@ -28,3 +30,9 @@ The following configuration creates a basic auto-remediation loop within {{ .Ren
 {{tffile "examples/aaa/basic.tf"}}
 
 {{ .SchemaMarkdown | trimspace }}
+
+## Third-Party Software
+
+The {{ .RenderedProviderName | trimspace }} Terraform Provider was built using the [Terraform Plugin Framework v1.15.0](https://github.com/hashicorp/terraform-plugin-framework/releases/tag/v1.15.0).
+
+Third-party software licenses and copyright notices for dependencies used in the {{ .RenderedProviderName | trimspace }} Terraform Provider are available in the [vendor](https://github.com/NVIDIA/terraform-provider-{{ .ProviderShortName }}/tree/main/vendor) directory.

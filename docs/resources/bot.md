@@ -1,11 +1,11 @@
 ---
-page_title: "mcahr_bot Resource - terraform-provider-mcahr"
+page_title: "NVIDIA Mission Control autonomous hardware recovery_bot Resource - terraform-provider-mcahr"
 subcategory: ""
 description: |-
   Alarms use Bots to execute automated Actions.
 ---
 
-# mcahr_bot (Resource)
+# NVIDIA Mission Control autonomous hardware recovery_bot (Resource)
 
 A Bot connects a single Alarm to one or more Actions. When the Alarm is raised the Bot fires all associated and enabled Actions to close the auto-remediation loop.
 
@@ -21,9 +21,9 @@ Each Bot has various configurable properties that determine its behavior. The mi
 The following example creates a Bot named `cpu_bot` that executes the `restart_action` Action when the `high_cpu_alarm` Alarm's fire_query is true:
 
 ```tf
-resource "mcahr_bot" "cpu_bot" {
+resource "NVIDIA Mission Control autonomous hardware recovery_bot" "cpu_bot" {
   name = "cpu_bot"
-  command = "if ${ mcahr_alarm.high_cpu_alarm.name} then ${ mcahr_action.restart_action.name} fi"
+  command = "if ${ NVIDIA Mission Control autonomous hardware recovery_alarm.high_cpu_alarm.name} then ${ NVIDIA Mission Control autonomous hardware recovery_action.restart_action.name} fi"
   description = "Restart on high CPU usage."
   enabled = true
 }
@@ -101,7 +101,7 @@ We define another Action called `jvm_trace_jvm_debug` that executes a bash scrip
 
 ```tf
 # Action to dump the JVM stack-trace on the selected resources and process.
-resource "mcahr_action" "jvm_trace_jvm_debug" {
+resource "NVIDIA Mission Control autonomous hardware recovery_action" "jvm_trace_jvm_debug" {
   name = "${var.namespace}_jvm_dump_stack"
   description = "Dump JVM process (by regex) heap, thread and GC info to s3, then kill the pod."
   # Parameters passed in: the regular expression to select process name, and destination AWS S3 bucket.
@@ -150,22 +150,19 @@ Now, anytime JVM memory exceeds our defined threshold the JVM is automatically r
 
 ### Required
 
-- `command` (String) A specific action to run.
-- `name` (String) The name/symbol for the object within NVIDIA Mission Control autonomous hardware recovery and the op language (must be unique, only alphanumeric/underscore).
+- `command` (String) The bot command in the format 'if <alarm> then <action> fi'.
+- `name` (String) The name/symbol for the object within Shoreline and the op language (must be unique, only alphanumeric/underscore).
 
 ### Optional
 
-- `alarm_resource_query` (String) Defaults to ``.
-- `communication_channel` (String) A string value denoting the slack channel where notifications related to the object should be sent to. Defaults to ``.
-- `communication_workspace` (String) A string value denoting the slack workspace where notifications related to the object should be sent to. Defaults to ``.
-- `description` (String) A user-friendly explanation of an object. Defaults to ``.
-- `enabled` (Boolean) If the object is currently enabled or disabled. Defaults to `false`.
-- `event_type` (String) Used to tag external triggers vs 'SYSTEM' alarms (default). Defaults to ``.
-- `family` (String) General class for an Action or Bot (e.g., custom, standard, metric, or system check). Defaults to `custom`.
-- `integration_name` (String) The name/symbol of a NVIDIA Mission Control autonomous hardware recovery integration. Defaults to ``.
-- `monitor_id` (String) For 'datadog' monitor triggered bots, the DD monitor identifier. Defaults to ``.
-
-### Read-Only
-
-- `id` (String) The ID of this resource.
-- `type` (String) The type of object (i.e., Alarm, Action, Bot, Resource, or File).
+- `alarm_resource_query` (String) Resource query for alarm context.
+- `communication_channel` (String) Communication channel for notifications.
+- `communication_workspace` (String) Communication workspace for notifications.
+- `description` (String) Description of the bot.
+- `enabled` (Boolean) Whether the bot is enabled.
+- `event_type` (String, Deprecated) **Deprecated** Use `trigger_source` instead.
+- `family` (String) The family/category for the bot.
+- `integration_name` (String) Integration name for external systems.
+- `monitor_id` (String, Deprecated) **Deprecated** Use `trigger_id` instead.
+- `trigger_id` (String) The ID of the trigger. It's required when linking an **external** trigger to an execution entity. If it's not set, then the id of the internal trigger entity will be saved in the state file.
+- `trigger_source` (String) The source of the trigger. It's required when linking an **external** trigger to an execution entity (for example: `ALERTMANAGER`). If it's not set, then the source of the internal trigger entity will be saved in the state file.
