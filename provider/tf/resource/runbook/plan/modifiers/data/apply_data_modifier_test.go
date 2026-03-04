@@ -84,7 +84,7 @@ func TestApplyDataModifier(t *testing.T) {
 			expectError: false,
 			validate: func(t *testing.T, result *model.RunbookTFModel) {
 				assert.False(t, result.Cells.IsNull())
-				assert.Equal(t, result.Cells.ValueString(), "[{\"description\":\"\",\"enabled\":false,\"name\":\"cell1\",\"op\":\"code\",\"secret_aware\":false}]")
+				assert.Equal(t, result.Cells.ValueString(), "[{\"description\":\"\",\"enabled\":true,\"name\":\"cell1\",\"op\":\"code\",\"secret_aware\":false}]")
 
 				assert.Equal(t, result.Params.ValueString(), "[{\"name\":\"p1\",\"value\":\"v1\"}]")
 
@@ -342,7 +342,7 @@ func TestApplyDataModifier_AllFieldTypes(t *testing.T) {
 	assert.Equal(t, result.SecretNames.Elements()[1], types.StringValue("s2"))
 
 	// Check JSON fields
-	assert.Equal(t, result.Cells.ValueString(), "[{\"description\":\"\",\"enabled\":false,\"name\":\"c1\",\"op\":\"code\",\"secret_aware\":false}]")
+	assert.Equal(t, result.Cells.ValueString(), "[{\"description\":\"\",\"enabled\":true,\"name\":\"c1\",\"op\":\"code\",\"secret_aware\":false}]")
 	assert.Equal(t, result.Params.ValueString(), "[{\"name\":\"p1\",\"value\":\"v1\"}]")
 	assert.Equal(t, result.ExternalParams.ValueString(), "[{\"name\":\"ep1\",\"source\":\"src\"}]")
 }

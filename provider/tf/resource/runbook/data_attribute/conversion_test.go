@@ -232,8 +232,8 @@ func TestConvertToString(t *testing.T) {
 			},
 			fieldName:   "cells",
 			expectError: false,
-			// Should contain internal model format
-			expected: `[{"description":"","enabled":false,"name":"test_cell","op":"print('hello')","secret_aware":false}]`,
+			// Should contain internal model format with enabled defaulting to true
+			expected: `[{"description":"","enabled":true,"name":"test_cell","op":"print('hello')","secret_aware":false}]`,
 		},
 		{
 			name:        "Non-JSON field with map should error",
@@ -369,6 +369,44 @@ func TestConvertCellsToInternalModel(t *testing.T) {
 			expectError: false,
 			validate: func(t *testing.T, result types.String) {
 				assert.Contains(t, result.ValueString(), `"op":"print('test')"`)
+			},
+		},
+		{
+			name: "Cell without enabled field should default to true",
+			inputCells: []interface{}{
+				map[string]interface{}{
+					"name":    "cell1",
+					"type":    "OP_LANG",
+					"content": "echo hello",
+				},
+				map[string]interface{}{
+					"name":    "cell2",
+					"type":    "MARKDOWN",
+					"content": "# Title",
+				},
+			},
+			expectError: false,
+			validate: func(t *testing.T, result types.String) {
+				// Verify both cells have enabled=true by default
+				assert.Contains(t, result.ValueString(), `"enabled":true`)
+				// Count occurrences - should appear twice (once for each cell)
+				count := strings.Count(result.ValueString(), `"enabled":true`)
+				assert.Equal(t, 2, count, "Both cells should have enabled=true")
+			},
+		},
+		{
+			name: "Cell with explicit enabled=false should remain false",
+			inputCells: []interface{}{
+				map[string]interface{}{
+					"name":    "cell1",
+					"type":    "OP_LANG",
+					"content": "echo hello",
+					"enabled": false,
+				},
+			},
+			expectError: false,
+			validate: func(t *testing.T, result types.String) {
+				assert.Contains(t, result.ValueString(), `"enabled":false`)
 			},
 		},
 	}

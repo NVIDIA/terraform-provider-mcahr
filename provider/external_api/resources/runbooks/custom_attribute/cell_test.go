@@ -150,13 +150,31 @@ func TestCellJsonAPI_SetFromMap(t *testing.T) {
 			},
 		},
 		{
-			name:  "Empty map",
+			name:  "Empty map - should apply defaults",
 			input: map[string]interface{}{},
 			expected: &CellJsonAPI{
-				Name:        "",
+				Name:        DefaultCellName,
 				Content:     "",
-				Enabled:     false,
+				Enabled:     DefaultCellEnabled,
+				Type:        "",
 				CellType:    "",
+				SecretAware: DefaultCellSecretAware,
+				Description: DefaultCellDescription,
+			},
+		},
+		{
+			name: "Cell without enabled field - should default to true",
+			input: map[string]interface{}{
+				"name":    "test_cell",
+				"content": "print('test')",
+				"type":    OP_LANG_TYPE,
+			},
+			expected: &CellJsonAPI{
+				Name:        "test_cell",
+				Content:     "print('test')",
+				Enabled:     true,
+				Type:        "",
+				CellType:    OP_LANG_TYPE,
 				SecretAware: false,
 				Description: "",
 			},
@@ -698,4 +716,74 @@ func TestCellJson_SetGetConfig(t *testing.T) {
 
 	// then
 	assert.Equal(t, config.BackendVersion.Version, result.BackendVersion.Version)
+}
+
+// TestEnabledDefaultBehavior verifies that the enabled field defaults to true
+// consistently for both inline cells and data field cells
+func TestEnabledDefaultBehavior(t *testing.T) {
+	t.Run("UnmarshalJSON - cell without enabled field defaults to true", func(t *testing.T) {
+		// Simulates inline cells field behavior
+		cellJSON := `{
+			"op": "host | echo hello",
+			"name": "test_cell"
+		}`
+
+		cell := &CellJson{}
+		err := json.Unmarshal([]byte(cellJSON), cell)
+
+		require.NoError(t, err)
+		assert.Equal(t, true, cell.Enabled, "Cell without enabled field should default to true via UnmarshalJSON")
+	})
+
+	t.Run("SetFromMap - cell without enabled field defaults to true", func(t *testing.T) {
+		// Simulates data field behavior
+		cellMap := map[string]interface{}{
+			"name":    "test_cell",
+			"type":    "OP_LANG",
+			"content": "host | echo hello",
+		}
+
+		cell := &CellJsonAPI{}
+		cell.SetFromMap(cellMap)
+
+		assert.Equal(t, true, cell.Enabled, "Cell without enabled field should default to true via SetFromMap")
+	})
+
+	t.Run("SetFromMap - cell with explicit enabled=false", func(t *testing.T) {
+		cellMap := map[string]interface{}{
+			"name":    "test_cell",
+			"type":    "OP_LANG",
+			"content": "host | echo hello",
+			"enabled": false,
+		}
+
+		cell := &CellJsonAPI{}
+		cell.SetFromMap(cellMap)
+
+		assert.Equal(t, false, cell.Enabled, "Cell with explicit enabled=false should remain false")
+	})
+
+	t.Run("Consistency between UnmarshalJSON and SetFromMap", func(t *testing.T) {
+		// Test that both methods produce the same default
+		cellJSONStr := `{"op": "code", "name": "cell1"}`
+
+		// Method 1: UnmarshalJSON
+		cell1 := &CellJson{}
+		err := json.Unmarshal([]byte(cellJSONStr), cell1)
+		require.NoError(t, err)
+
+		// Method 2: SetFromMap
+		cellMap := map[string]interface{}{
+			"type":    "OP_LANG",
+			"content": "code",
+			"name":    "cell1",
+		}
+		apiCell := &CellJsonAPI{}
+		apiCell.SetFromMap(cellMap)
+		cell2 := apiCell.ToInternalModel()
+
+		assert.Equal(t, cell1.Enabled, cell2.Enabled, "Both methods should produce the same default enabled value")
+		assert.Equal(t, true, cell1.Enabled, "Default should be true")
+		assert.Equal(t, true, cell2.Enabled, "Default should be true")
+	})
 }

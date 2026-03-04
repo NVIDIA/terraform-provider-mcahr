@@ -77,6 +77,13 @@ func (c *CellJsonAPI) ToInternalModel() *CellJson {
 
 func (c *CellJsonAPI) SetFromMap(cell map[string]interface{}) {
 
+	// Apply defaults for fields that should have them
+	c.Name = DefaultCellName
+	c.Enabled = DefaultCellEnabled
+	c.SecretAware = DefaultCellSecretAware
+	c.Description = DefaultCellDescription
+
+	// Override with values from map if present
 	if name, ok := cell["name"]; ok {
 		c.Name = name.(string)
 	}
