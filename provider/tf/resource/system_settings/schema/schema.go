@@ -19,7 +19,6 @@ import (
 	"terraform/terraform-provider/provider/common/attribute"
 	defaultmodifiers "terraform/terraform-provider/provider/tf/core/plan/modifiers/default"
 	coreschema "terraform/terraform-provider/provider/tf/core/schema"
-	schemabuilder "terraform/terraform-provider/provider/tf/core/schema"
 	"terraform/terraform-provider/provider/tf/core/validators"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -38,7 +37,7 @@ var _ coreschema.ResourceSchema = &SystemSettingsSchema{}
 // GetSchema returns the schema definition for the system_settings resource
 func (s *SystemSettingsSchema) GetSchema() schema.Schema {
 
-	builder := schemabuilder.NewSchemaBuilder()
+	builder := coreschema.NewSchemaBuilder()
 
 	builder.AddMarkdownDescription("System-level settings. Note: there must only be one instance of this terraform resource named 'system_settings'.")
 
@@ -263,4 +262,8 @@ func (s *SystemSettingsSchema) GetCompatibilityOptions() map[string]attribute.Co
 		"skipped_tags":                            {MinVersion: "release-27.2.0"},
 		"managed_secrets":                         {MinVersion: "release-28.1.0"},
 	}
+}
+
+func (s *SystemSettingsSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
+	return coreschema.DefaultFieldComparisonRules()
 }

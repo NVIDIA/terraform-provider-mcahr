@@ -61,7 +61,7 @@ func TestRunbookTranslatorCommon_ToAPIModelWithVersion(t *testing.T) {
 			apiVersion:     common.V1,
 			expectError:    false,
 			validate: func(t *testing.T, apiModel *statement.StatementInputAPIModel) {
-				assert.Equal(t, apiModel.Statement, "define_notebook(notebook_name=\"test_runbook\", enabled=false, timeout_ms=0, params=, external_params=, description=\"\", allowed_resources_query=\"\", communication_workspace=\"\", communication_channel=\"\", is_run_output_persisted=false, filter_resource_to_action=false, communication_cud_notifications=false, communication_approval_notifications=false, communication_execution_notifications=false, allowed_entities=[], approvers=[], labels=[], editors=[], secret_names=[], cells=\"W3sidHlwZSI6Ik9QX0xBTkciLCJjb250ZW50IjoicHJpbnQoJ3Rlc3QnKSIsIm5hbWUiOiJjZWxsMSIsImVuYWJsZWQiOnRydWUsInNlY3JldF9hd2FyZSI6ZmFsc2UsImRlc2NyaXB0aW9uIjoiIn1d\")")
+				assert.Equal(t, "define_notebook(notebook_name=\"test_runbook\", enabled=false, timeout_ms=0, params=, external_params=, description=\"\", allowed_resources_query=\"\", communication_workspace=\"\", communication_channel=\"\", is_run_output_persisted=false, filter_resource_to_action=false, communication_cud_notifications=false, communication_approval_notifications=false, communication_execution_notifications=false, allowed_entities=[], approvers=[], labels=[], editors=[], secret_names=[], cells=\"W3siY29udGVudCI6InByaW50KCd0ZXN0JykiLCJlbmFibGVkIjp0cnVlLCJuYW1lIjoiY2VsbDEiLCJzZWNyZXRfYXdhcmUiOmZhbHNlLCJ0eXBlIjoiT1BfTEFORyJ9XQ==\")", apiModel.Statement)
 				assert.Equal(t, common.V1, apiModel.APIVersion)
 			},
 		},
@@ -100,7 +100,7 @@ func TestRunbookTranslatorCommon_ToAPIModelWithVersion(t *testing.T) {
 			apiVersion:     common.V1,
 			expectError:    false,
 			validate: func(t *testing.T, apiModel *statement.StatementInputAPIModel) {
-				assert.Equal(t, apiModel.Statement, "update_notebook(notebook_name=\"test_runbook\", enabled=false, timeout_ms=0, params=, external_params=, description=\"\", allowed_resources_query=\"\", communication_workspace=\"\", communication_channel=\"\", is_run_output_persisted=false, filter_resource_to_action=false, communication_cud_notifications=false, communication_approval_notifications=false, communication_execution_notifications=false, allowed_entities=[], approvers=[], labels=[], editors=[], secret_names=[], cells=\"W3sidHlwZSI6Ik9QX0xBTkciLCJjb250ZW50IjoicHJpbnQoJ3Rlc3QnKSIsIm5hbWUiOiJjZWxsMSIsImVuYWJsZWQiOnRydWUsInNlY3JldF9hd2FyZSI6ZmFsc2UsImRlc2NyaXB0aW9uIjoiIn1d\")")
+				assert.Equal(t, "update_notebook(notebook_name=\"test_runbook\", enabled=false, timeout_ms=0, params=, external_params=, description=\"\", allowed_resources_query=\"\", communication_workspace=\"\", communication_channel=\"\", is_run_output_persisted=false, filter_resource_to_action=false, communication_cud_notifications=false, communication_approval_notifications=false, communication_execution_notifications=false, allowed_entities=[], approvers=[], labels=[], editors=[], secret_names=[], cells=\"W3siY29udGVudCI6InByaW50KCd0ZXN0JykiLCJlbmFibGVkIjp0cnVlLCJuYW1lIjoiY2VsbDEiLCJzZWNyZXRfYXdhcmUiOmZhbHNlLCJ0eXBlIjoiT1BfTEFORyJ9XQ==\")", apiModel.Statement)
 				assert.Equal(t, common.V1, apiModel.APIVersion)
 			},
 		},

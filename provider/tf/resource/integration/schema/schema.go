@@ -20,7 +20,6 @@ import (
 	deprecation "terraform/terraform-provider/provider/tf/core/plan/modifiers/deprecation"
 	nulls "terraform/terraform-provider/provider/tf/core/plan/modifiers/null"
 	coreschema "terraform/terraform-provider/provider/tf/core/schema"
-	schemabuilder "terraform/terraform-provider/provider/tf/core/schema"
 	defaults "terraform/terraform-provider/provider/tf/resource/integration/plan/modifier/default"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -44,7 +43,7 @@ var _ coreschema.ResourceSchema = &IntegrationSchema{}
 // and computed fields.
 func (s *IntegrationSchema) GetSchema() schema.Schema {
 
-	builder := schemabuilder.NewSchemaBuilder()
+	builder := coreschema.NewSchemaBuilder()
 
 	builder.AddMarkdownDescription("Integration resource for configuring integrations with external services")
 
@@ -68,7 +67,7 @@ func (s *IntegrationSchema) GetSchema() schema.Schema {
 	return builder.Build()
 }
 
-func addGlobalSharedSchema(builder *schemabuilder.SchemaBuilder) {
+func addGlobalSharedSchema(builder *coreschema.SchemaBuilder) {
 
 	builder.AddAttribute("name", schema.StringAttribute{
 		MarkdownDescription: "The name of the integration",
@@ -103,7 +102,7 @@ func addGlobalSharedSchema(builder *schemabuilder.SchemaBuilder) {
 	})
 }
 
-func addCustomSharedSchema(builder *schemabuilder.SchemaBuilder) {
+func addCustomSharedSchema(builder *coreschema.SchemaBuilder) {
 
 	builder.AddAttribute("api_url", schema.StringAttribute{
 		MarkdownDescription: "The API URL of the integration",
@@ -172,7 +171,7 @@ func addCustomSharedSchema(builder *schemabuilder.SchemaBuilder) {
 	})
 }
 
-func addAlertmanagerSchema(builder *schemabuilder.SchemaBuilder) {
+func addAlertmanagerSchema(builder *coreschema.SchemaBuilder) {
 
 	builder.AddAttribute("external_url", schema.StringAttribute{
 		MarkdownDescription: "The external URL of the integration",
@@ -196,7 +195,7 @@ func addAlertmanagerSchema(builder *schemabuilder.SchemaBuilder) {
 	})
 }
 
-func addDatadogSchema(builder *schemabuilder.SchemaBuilder) {
+func addDatadogSchema(builder *coreschema.SchemaBuilder) {
 	// NOTE: api_key and api_url are defined in addCustomSharedSchema
 
 	builder.AddAttribute("site_url", schema.StringAttribute{
@@ -230,7 +229,7 @@ func addDatadogSchema(builder *schemabuilder.SchemaBuilder) {
 	})
 }
 
-func addAzureActiveDirectorySchema(builder *schemabuilder.SchemaBuilder) {
+func addAzureActiveDirectorySchema(builder *coreschema.SchemaBuilder) {
 	// NOTE: idp_name, cache_ttl_ms, api_rate_limit are defined in addCustomSharedSchema
 
 	builder.AddAttribute("tenant_id", schema.StringAttribute{
@@ -264,11 +263,11 @@ func addAzureActiveDirectorySchema(builder *schemabuilder.SchemaBuilder) {
 	})
 }
 
-func addOktaSchema(builder *schemabuilder.SchemaBuilder) {
+func addOktaSchema(builder *coreschema.SchemaBuilder) {
 	// NOTE: api_key, api_url, idp_name, cache_ttl_ms, api_rate_limit are defined in addCustomSharedSchema
 }
 
-func addGoogleCloudIdentitySchema(builder *schemabuilder.SchemaBuilder) {
+func addGoogleCloudIdentitySchema(builder *coreschema.SchemaBuilder) {
 	// NOTE: idp_name, cache_ttl_ms, api_rate_limit are defined in addCustomSharedSchema
 
 	builder.AddAttribute("subject", schema.StringAttribute{
@@ -293,11 +292,11 @@ func addGoogleCloudIdentitySchema(builder *schemabuilder.SchemaBuilder) {
 
 }
 
-func addBcmSchema(builder *schemabuilder.SchemaBuilder) {
+func addBcmSchema(builder *coreschema.SchemaBuilder) {
 	// NOTE: idp_name, cache_ttl_ms, api_rate_limit are defined in addCustomSharedSchema
 }
 
-func addBcmConnectivitySchema(builder *schemabuilder.SchemaBuilder) {
+func addBcmConnectivitySchema(builder *coreschema.SchemaBuilder) {
 	// NOTE: api_key is defined in shared schema
 
 	builder.AddAttribute("api_certificate", schema.StringAttribute{
@@ -312,15 +311,15 @@ func addBcmConnectivitySchema(builder *schemabuilder.SchemaBuilder) {
 
 }
 
-func addElasticSchema(builder *schemabuilder.SchemaBuilder) {
+func addElasticSchema(builder *coreschema.SchemaBuilder) {
 	// NOTE: api_key and api_url are defined in shared schema
 }
 
-func addFluentbitElasticSchema(builder *schemabuilder.SchemaBuilder) {
+func addFluentbitElasticSchema(builder *coreschema.SchemaBuilder) {
 	// NOTE: api_url are defined in shared schema
 }
 
-func addNvaultSchema(builder *schemabuilder.SchemaBuilder) {
+func addNvaultSchema(builder *coreschema.SchemaBuilder) {
 	// !!! IMPORTANT !!!
 	// Don't add defaults here. Use the adapter to set the defaults for custom attributes.
 
@@ -414,4 +413,8 @@ func (s *IntegrationSchema) GetCompatibilityOptions() map[string]attribute.Compa
 			MinVersion: "release-29.0.0",
 		},
 	}
+}
+
+func (s *IntegrationSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
+	return coreschema.DefaultFieldComparisonRules()
 }

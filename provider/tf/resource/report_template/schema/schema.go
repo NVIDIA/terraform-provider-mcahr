@@ -18,7 +18,6 @@ package report_template
 import (
 	"terraform/terraform-provider/provider/common/attribute"
 	coreschema "terraform/terraform-provider/provider/tf/core/schema"
-	schemabuilder "terraform/terraform-provider/provider/tf/core/schema"
 	"terraform/terraform-provider/provider/tf/core/validators"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -34,7 +33,7 @@ var _ coreschema.ResourceSchema = &ReportTemplateSchema{}
 
 // GetSchema returns the schema for the report template resource
 func (s *ReportTemplateSchema) GetSchema() schema.Schema {
-	builder := schemabuilder.NewSchemaBuilder()
+	builder := coreschema.NewSchemaBuilder()
 
 	builder.AddMarkdownDescription("Report template resource for creating report templates with blocks and links")
 
@@ -74,4 +73,22 @@ func (s *ReportTemplateSchema) GetSchema() schema.Schema {
 
 func (s *ReportTemplateSchema) GetCompatibilityOptions() map[string]attribute.CompatibilityOptions {
 	return map[string]attribute.CompatibilityOptions{}
+}
+
+func (s *ReportTemplateSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
+	return map[string]coreschema.FieldComparisonRule{
+		// Skip minimal fields - they have _full variants for comparison
+		// The minimal fields will always differ (API adds defaults) which is expected
+		"blocks": {
+			Behavior: coreschema.SkipComparison,
+			Reason:   "Has blocks_full variant. Use blocks_full for detecting API modifications.",
+		},
+		"links": {
+			Behavior: coreschema.SkipComparison,
+			Reason:   "Has links_full variant. Use links_full for detecting API modifications.",
+		},
+
+		// NOTE: blocks_full and links_full are NOT skipped
+		// They will be compared to detect real API modifications
+	}
 }

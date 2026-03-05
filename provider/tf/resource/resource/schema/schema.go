@@ -19,7 +19,6 @@ import (
 	"terraform/terraform-provider/provider/common/attribute"
 	defaultmodifiers "terraform/terraform-provider/provider/tf/core/plan/modifiers/default"
 	coreschema "terraform/terraform-provider/provider/tf/core/schema"
-	schemabuilder "terraform/terraform-provider/provider/tf/core/schema"
 	"terraform/terraform-provider/provider/tf/core/validators"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -44,7 +43,7 @@ func (s *ResourceSchema) GetCompatibilityOptions() map[string]attribute.Compatib
 
 // GetSchema returns the schema structure
 func (s *ResourceSchema) GetSchema() schema.Schema {
-	builder := schemabuilder.NewSchemaBuilder()
+	builder := coreschema.NewSchemaBuilder()
 
 	builder.AddMarkdownDescription("A server or compute resource in the system (e.g. host, pod, container).")
 
@@ -86,4 +85,8 @@ func (s *ResourceSchema) GetSchema() schema.Schema {
 	})
 
 	return builder.Build()
+}
+
+func (s *ResourceSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
+	return coreschema.DefaultFieldComparisonRules()
 }

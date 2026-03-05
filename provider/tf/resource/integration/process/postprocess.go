@@ -18,6 +18,7 @@ package process
 import (
 	"fmt"
 	"terraform/terraform-provider/provider/common"
+	corecommon "terraform/terraform-provider/provider/tf/core/common"
 	"terraform/terraform-provider/provider/tf/core/process"
 	integrationtf "terraform/terraform-provider/provider/tf/resource/integration/model"
 )
@@ -42,7 +43,7 @@ func (p *IntegrationPostProcessor) PostProcessDelete(requestContext *common.Requ
 	return nil
 }
 
-func setDeprecatedCacheTTL(requestContext *common.RequestContext, config process.Getter, tfModel *integrationtf.IntegrationTFModel) error {
+func setDeprecatedCacheTTL(requestContext *common.RequestContext, config corecommon.Getter, tfModel *integrationtf.IntegrationTFModel) error {
 
 	// Get the original values from config
 	var configModel integrationtf.IntegrationTFModel

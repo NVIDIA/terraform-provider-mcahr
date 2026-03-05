@@ -18,7 +18,6 @@ package schema
 import (
 	"terraform/terraform-provider/provider/common/attribute"
 	coreschema "terraform/terraform-provider/provider/tf/core/schema"
-	schemabuilder "terraform/terraform-provider/provider/tf/core/schema"
 	"terraform/terraform-provider/provider/tf/core/validators"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -37,7 +36,7 @@ var _ coreschema.ResourceSchema = &DashboardSchema{}
 
 func (s *DashboardSchema) GetSchema() schema.Schema {
 
-	builder := schemabuilder.NewSchemaBuilder()
+	builder := coreschema.NewSchemaBuilder()
 
 	builder.AddMarkdownDescription("Dashboard resource for creating dashboards with groups and values")
 
@@ -109,4 +108,22 @@ func (s *DashboardSchema) GetSchema() schema.Schema {
 
 func (s *DashboardSchema) GetCompatibilityOptions() map[string]attribute.CompatibilityOptions {
 	return map[string]attribute.CompatibilityOptions{}
+}
+
+func (s *DashboardSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
+	return map[string]coreschema.FieldComparisonRule{
+		// Skip minimal fields - they have _full variants for comparison
+		// The minimal fields will always differ (API adds defaults) which is expected
+		"groups": {
+			Behavior: coreschema.SkipComparison,
+			Reason:   "Has groups_full variant. Use groups_full for detecting API modifications.",
+		},
+		"values": {
+			Behavior: coreschema.SkipComparison,
+			Reason:   "Has values_full variant. Use values_full for detecting API modifications.",
+		},
+
+		// NOTE: groups_full and values_full are NOT skipped
+		// They will be compared to detect real API modifications
+	}
 }

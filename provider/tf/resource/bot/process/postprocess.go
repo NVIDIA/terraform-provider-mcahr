@@ -18,6 +18,7 @@ package process
 import (
 	"fmt"
 	"terraform/terraform-provider/provider/common"
+	corecommon "terraform/terraform-provider/provider/tf/core/common"
 	"terraform/terraform-provider/provider/tf/core/process"
 	bottf "terraform/terraform-provider/provider/tf/resource/bot/model"
 )
@@ -44,7 +45,7 @@ func (p *BotPostProcessor) PostProcessDelete(requestContext *common.RequestConte
 
 // If the user has deprecated fields set, then set them to the value returned by the API
 // Otherwise, leave them as is (Null)
-func setDeprecatedFields(requestContext *common.RequestContext, getter process.Getter, tfModel *bottf.BotTFModel) error {
+func setDeprecatedFields(requestContext *common.RequestContext, getter corecommon.Getter, tfModel *bottf.BotTFModel) error {
 
 	// Get the original values from config/state (before calling the API)
 	var configModel bottf.BotTFModel

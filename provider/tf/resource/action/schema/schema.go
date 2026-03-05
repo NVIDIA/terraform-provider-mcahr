@@ -20,7 +20,6 @@ import (
 	"terraform/terraform-provider/provider/tf/core"
 	defaultmodifiers "terraform/terraform-provider/provider/tf/core/plan/modifiers/default"
 	coreschema "terraform/terraform-provider/provider/tf/core/schema"
-	schemabuilder "terraform/terraform-provider/provider/tf/core/schema"
 	"terraform/terraform-provider/provider/tf/core/validators"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -41,7 +40,7 @@ var _ coreschema.ResourceSchema = &ActionSchema{}
 // template fields for notifications, and computed fields (resource_id).
 func (s *ActionSchema) GetSchema() schema.Schema {
 
-	builder := schemabuilder.NewSchemaBuilder()
+	builder := coreschema.NewSchemaBuilder()
 
 	builder.AddMarkdownDescription("Action resource for executing commands")
 
@@ -247,5 +246,14 @@ func (s *ActionSchema) GetCompatibilityOptions() map[string]attribute.Compatibil
 		"editors": {
 			MinVersion: "release-18.0.0",
 		},
+	}
+}
+
+func (s *ActionSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
+	return map[string]coreschema.FieldComparisonRule{
+		// Skip deprecated long template fields
+		"start_long_template":    {Behavior: coreschema.SkipComparison},
+		"error_long_template":    {Behavior: coreschema.SkipComparison},
+		"complete_long_template": {Behavior: coreschema.SkipComparison},
 	}
 }

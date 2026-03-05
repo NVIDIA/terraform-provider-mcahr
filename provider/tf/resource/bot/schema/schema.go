@@ -21,7 +21,6 @@ import (
 	deprecation "terraform/terraform-provider/provider/tf/core/plan/modifiers/deprecation"
 	nulls "terraform/terraform-provider/provider/tf/core/plan/modifiers/null"
 	coreschema "terraform/terraform-provider/provider/tf/core/schema"
-	schemabuilder "terraform/terraform-provider/provider/tf/core/schema"
 	"terraform/terraform-provider/provider/tf/core/validators"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -40,7 +39,7 @@ var _ coreschema.ResourceSchema = &BotSchema{}
 
 func (s *BotSchema) GetSchema() schema.Schema {
 
-	builder := schemabuilder.NewSchemaBuilder()
+	builder := coreschema.NewSchemaBuilder()
 
 	builder.AddMarkdownDescription("An automation that ties an Action to an Alert.")
 
@@ -172,5 +171,13 @@ func (s *BotSchema) GetCompatibilityOptions() map[string]attribute.Compatibility
 		"integration_name": {
 			MinVersion: "release-15.0.0",
 		},
+	}
+}
+
+func (s *BotSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
+	return map[string]coreschema.FieldComparisonRule{
+		// Skip deprecated fields - they are replaced by trigger_source and trigger_id
+		"event_type": {Behavior: coreschema.SkipComparison},
+		"monitor_id": {Behavior: coreschema.SkipComparison},
 	}
 }

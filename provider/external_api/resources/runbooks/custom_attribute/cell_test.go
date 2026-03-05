@@ -16,6 +16,7 @@
 package customattribute
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"strings"
@@ -592,35 +593,51 @@ func TestValidateOpAndMd(t *testing.T) {
 
 func TestMapCellsToAPIModel(t *testing.T) {
 	tests := []struct {
-		name          string
-		input         string
-		expectError   bool
-		errorContains string
+		name           string
+		input          string
+		backendVersion *version.BackendVersion
+		expectError    bool
+		errorContains  string
 	}{
 		{
-			name: "Valid cells JSON",
+			name: "Valid cells JSON with version 29.0.1",
 			input: `[
 				{"op": "print('hello')", "name": "cell1", "enabled": true},
 				{"md": "# Markdown", "name": "cell2", "enabled": false}
 			]`,
-			expectError: false,
+			backendVersion: &version.BackendVersion{Version: "release-29.0.1", Major: 29, Minor: 0, Patch: 1},
+			expectError:    false,
 		},
 		{
-			name:        "Invalid JSON",
-			input:       `{invalid json}`,
-			expectError: true,
+			name: "Valid cells JSON with version 28.4.0",
+			input: `[
+				{"op": "print('hello')", "name": "cell1", "enabled": true},
+				{"md": "# Markdown", "name": "cell2", "enabled": false}
+			]`,
+			backendVersion: &version.BackendVersion{Version: "release-28.4.0", Major: 28, Minor: 4, Patch: 0},
+			expectError:    false,
 		},
 		{
-			name:        "Empty cells",
-			input:       `[]`,
-			expectError: false,
+			name:           "Invalid JSON",
+			input:          `{invalid json}`,
+			backendVersion: &version.BackendVersion{Version: "release-29.0.1", Major: 29, Minor: 0, Patch: 1},
+			expectError:    true,
+		},
+		{
+			name:           "Empty cells",
+			input:          `[]`,
+			backendVersion: &version.BackendVersion{Version: "release-29.0.1", Major: 29, Minor: 0, Patch: 1},
+			expectError:    false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// given
+			requestContext := common.NewRequestContext(context.Background()).WithBackendVersion(tt.backendVersion)
+
 			// when
-			result, err := MapCellsToAPIModel(tt.input)
+			result, err := MapCellsToAPIModel(requestContext, tt.input)
 
 			// then
 			if tt.expectError {

@@ -17,6 +17,7 @@ package process
 
 import (
 	"terraform/terraform-provider/provider/common"
+	corecommon "terraform/terraform-provider/provider/tf/core/common"
 	"terraform/terraform-provider/provider/tf/core/process"
 	filetf "terraform/terraform-provider/provider/tf/resource/file/model"
 	"terraform/terraform-provider/provider/tf/resource/file/process/content"
@@ -49,7 +50,7 @@ func (p *FilePreProcessor) PreProcessDelete(requestContext *common.RequestContex
 // Custom preprocess functions
 //
 
-func (p *FilePreProcessor) handleCreateOrUpdate(requestContext *common.RequestContext, data *process.ProcessData, planGetter process.Getter) (*filetf.FileTFModel, error) {
+func (p *FilePreProcessor) handleCreateOrUpdate(requestContext *common.RequestContext, data *process.ProcessData, planGetter corecommon.Getter) (*filetf.FileTFModel, error) {
 
 	model, err := p.base.ExtractFrom(requestContext, planGetter, &filetf.FileTFModel{})
 	if err != nil {

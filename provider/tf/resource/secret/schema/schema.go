@@ -18,7 +18,6 @@ package schema
 import (
 	"terraform/terraform-provider/provider/common/attribute"
 	coreschema "terraform/terraform-provider/provider/tf/core/schema"
-	schemabuilder "terraform/terraform-provider/provider/tf/core/schema"
 	"terraform/terraform-provider/provider/tf/core/validators"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -33,7 +32,7 @@ var _ coreschema.ResourceSchema = &NVaultSecretSchema{}
 
 // GetNVaultSecretResourceSchema returns the schema for the nvault secret resource
 func (s *NVaultSecretSchema) GetSchema() schema.Schema {
-	builder := schemabuilder.NewSchemaBuilder()
+	builder := coreschema.NewSchemaBuilder()
 
 	builder.AddMarkdownDescription("NVault secret. A secret managed by NVault. Creating it requires an active NVault integration to be configured and enabled.")
 
@@ -64,4 +63,8 @@ func (s *NVaultSecretSchema) GetSchema() schema.Schema {
 
 func (s *NVaultSecretSchema) GetCompatibilityOptions() map[string]attribute.CompatibilityOptions {
 	return map[string]attribute.CompatibilityOptions{}
+}
+
+func (s *NVaultSecretSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
+	return coreschema.DefaultFieldComparisonRules()
 }

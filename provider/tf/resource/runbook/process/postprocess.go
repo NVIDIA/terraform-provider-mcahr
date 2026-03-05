@@ -20,6 +20,7 @@ import (
 	"terraform/terraform-provider/provider/common"
 	"terraform/terraform-provider/provider/common/version"
 	customattribute "terraform/terraform-provider/provider/external_api/resources/runbooks/custom_attribute"
+	corecommon "terraform/terraform-provider/provider/tf/core/common"
 	"terraform/terraform-provider/provider/tf/core/process"
 	runbooktf "terraform/terraform-provider/provider/tf/resource/runbook/model"
 	converters "terraform/terraform-provider/provider/tf/resource/runbook/translator/object_converters"
@@ -32,30 +33,21 @@ type RunbookPostProcessor struct{}
 var _ process.PostProcessor[*runbooktf.RunbookTFModel] = &RunbookPostProcessor{}
 
 func (p *RunbookPostProcessor) PostProcessCreate(requestContext *common.RequestContext, data *process.ProcessData, tfModel *runbooktf.RunbookTFModel) (err error) {
-
-	// Process JSON fields first to populate _full attributes
-	err = postProcessJsonFields(requestContext, tfModel)
-	if err != nil {
-		return err
-	}
-
-	err = setFieldsFromPrevious(requestContext, data.CreateRequest.Plan, tfModel)
-	if err != nil {
-		return err
-	}
-
+	// No post-processing needed for create - orchestrator's RestoreAllFieldsFromPlan handles restoration
 	return nil
 }
 
 func (p *RunbookPostProcessor) PostProcessRead(requestContext *common.RequestContext, data *process.ProcessData, tfModel *runbooktf.RunbookTFModel) (err error) {
 
-	// Process JSON fields first to populate _full attributes
+	// Process JSON fields to populate _full attributes from API response for drift detection
 	err = postProcessJsonFields(requestContext, tfModel)
 	if err != nil {
 		return err
 	}
 
-	err = setFieldsFromPrevious(requestContext, data.ReadRequest.State, tfModel)
+	// For READ, restore base fields from state (skip _full variants for drift detection)
+	// Keep _full fields from API response to enable drift detection
+	err = restoreBaseFieldsFromState(requestContext, data.ReadRequest.State, tfModel)
 	if err != nil {
 		return err
 	}
@@ -64,18 +56,7 @@ func (p *RunbookPostProcessor) PostProcessRead(requestContext *common.RequestCon
 }
 
 func (p *RunbookPostProcessor) PostProcessUpdate(requestContext *common.RequestContext, data *process.ProcessData, tfModel *runbooktf.RunbookTFModel) (err error) {
-
-	// Process JSON fields first to populate _full attributes
-	err = postProcessJsonFields(requestContext, tfModel)
-	if err != nil {
-		return err
-	}
-
-	err = setFieldsFromPrevious(requestContext, data.UpdateRequest.Plan, tfModel)
-	if err != nil {
-		return err
-	}
-
+	// No post-processing needed for update - orchestrator's RestoreAllFieldsFromPlan handles restoration
 	return nil
 }
 
@@ -127,7 +108,9 @@ func postProcessJsonFullField[T common.JsonConfigurable](fullField *types.String
 	return types.StringValue(overriddenValues), nil
 }
 
-func setFieldsFromPrevious(requestContext *common.RequestContext, source process.Getter, tfModel *runbooktf.RunbookTFModel) error {
+// restoreBaseFieldsFromState restores base fields and special fields from state (excludes _full computed variants)
+// Used during READ to preserve user input while allowing _full fields to reflect API state for drift detection
+func restoreBaseFieldsFromState(requestContext *common.RequestContext, source corecommon.Getter, tfModel *runbooktf.RunbookTFModel) error {
 
 	var originalModel runbooktf.RunbookTFModel
 	diags := source.Get(requestContext.Context, &originalModel)
@@ -135,13 +118,15 @@ func setFieldsFromPrevious(requestContext *common.RequestContext, source process
 		return fmt.Errorf("failed to get original model: %s", diags.Errors())
 	}
 
-	// Restore values from plan/state to avoid inconsistent values for json fields
+	// Restore base fields from state (skip _full variants to enable drift detection)
 	tfModel.Cells = originalModel.Cells
 	tfModel.Params = originalModel.Params
 	tfModel.ExternalParams = originalModel.ExternalParams
+
+	// Restore special feature field
 	tfModel.Data = originalModel.Data
 
-	// If the params_groups is unknown, set it to null (avoid any errors regarding params update validation)
+	// If the params_groups is unknown, set it to null
 	if originalModel.ParamsGroups.IsUnknown() {
 		tfModel.ParamsGroups = types.ObjectNull(converters.ParamsGroupsAttrTypes)
 	} else {

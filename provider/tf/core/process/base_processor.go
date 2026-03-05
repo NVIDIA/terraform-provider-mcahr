@@ -17,7 +17,9 @@ package process
 
 import (
 	"fmt"
+
 	"terraform/terraform-provider/provider/common"
+	corecommon "terraform/terraform-provider/provider/tf/core/common"
 	model "terraform/terraform-provider/provider/tf/core/model"
 )
 
@@ -25,16 +27,8 @@ import (
 type BasePreProcessor[TF model.TFModel] struct{}
 
 // ExtractFromPlan extracts the TF model from plan data (used for Create/Update operations)
-func (b *BasePreProcessor[TF]) ExtractFrom(requestContext *common.RequestContext, getter Getter, tfModel TF) (TF, error) {
-	diags := getter.Get(requestContext.Context, tfModel)
-
-	if diags.HasError() {
-		// If there is an error, return the zero value of TF (which is nil)
-		var nilTF TF // TF is a pointer type, so it is initialized to nil
-		return nilTF, fmt.Errorf("failed to get data from TF source: %s", diags.Errors())
-	}
-
-	return tfModel, nil
+func (b *BasePreProcessor[TF]) ExtractFrom(requestContext *common.RequestContext, getter corecommon.Getter, tfModel TF) (TF, error) {
+	return corecommon.ExtractFromTfSource(requestContext, getter, tfModel)
 }
 
 func (b *BasePreProcessor[TF]) ExtractForDelete(requestContext *common.RequestContext, data *ProcessData, tfModel TF) (TF, error) {
@@ -43,10 +37,14 @@ func (b *BasePreProcessor[TF]) ExtractForDelete(requestContext *common.RequestCo
 		return b.ExtractFrom(requestContext, data.DeleteRequest.State, tfModel)
 	}
 
+	// In case of a failure after API call during create, the cleanups will call delete to remove the resource from the remote platform
+	// In this case, we need to extract the resource from the create request config
 	if data.CreateRequest != nil {
 		return b.ExtractFrom(requestContext, data.CreateRequest.Config, tfModel)
 	}
 
+	// In case of a failure after API call during update, the cleanups might call the delete flow
+	// In this case, we need to extract the resource from the update request config
 	if data.UpdateRequest != nil {
 		return b.ExtractFrom(requestContext, data.UpdateRequest.Config, tfModel)
 	}

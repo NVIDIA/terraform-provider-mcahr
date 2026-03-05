@@ -34,7 +34,9 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -73,6 +75,11 @@ func (m *MockResourceSchema) GetCompatibilityOptions() map[string]attribute.Comp
 	return args.Get(0).(map[string]attribute.CompatibilityOptions)
 }
 
+func (m *MockResourceSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
+	args := m.Called()
+	return args.Get(0).(map[string]coreschema.FieldComparisonRule)
+}
+
 // Helper function to create a simple ResourceSchema for testing
 func createMockResourceSchema() coreschema.ResourceSchema {
 	mockSchema := &MockResourceSchema{}
@@ -97,6 +104,9 @@ func createMockResourceSchema() coreschema.ResourceSchema {
 
 	// Mock GetCompatibilityOptions to return empty options
 	mockSchema.On("GetCompatibilityOptions").Return(map[string]attribute.CompatibilityOptions{})
+
+	// Mock GetFieldComparisonRules to return empty rules
+	mockSchema.On("GetFieldComparisonRules").Return(map[string]coreschema.FieldComparisonRule{})
 
 	return mockSchema
 }
@@ -191,8 +201,47 @@ func (m *MockTranslator[TF]) ToAPIModel(requestContext *common.RequestContext, t
 
 // Helper functions
 func createTestProcessData() *process.ProcessData {
+	// Create a simple plan with the test schema
+	sch := schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"name": schema.StringAttribute{
+				Required: true,
+			},
+			"command": schema.StringAttribute{
+				Required: true,
+			},
+			"enabled": schema.BoolAttribute{
+				Optional: true,
+			},
+			"timeout": schema.Int64Attribute{
+				Optional: true,
+			},
+		},
+	}
+
+	// Create attribute types for the plan object
+	attrTypes := map[string]tftypes.Type{
+		"name":    tftypes.String,
+		"command": tftypes.String,
+		"enabled": tftypes.Bool,
+		"timeout": tftypes.Number,
+	}
+
+	// Create values for the plan object
+	attrValues := map[string]tftypes.Value{
+		"name":    tftypes.NewValue(tftypes.String, "test_action"),
+		"command": tftypes.NewValue(tftypes.String, "echo test"),
+		"enabled": tftypes.NewValue(tftypes.Bool, true),
+		"timeout": tftypes.NewValue(tftypes.Number, 30),
+	}
+
+	plan := tfsdk.Plan{
+		Raw:    tftypes.NewValue(tftypes.Object{AttributeTypes: attrTypes}, attrValues),
+		Schema: sch,
+	}
+
 	return &process.ProcessData{
-		CreateRequest:  &resource.CreateRequest{},
+		CreateRequest:  &resource.CreateRequest{Plan: plan},
 		CreateResponse: &resource.CreateResponse{},
 	}
 }

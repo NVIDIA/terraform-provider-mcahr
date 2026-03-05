@@ -28,6 +28,7 @@ import (
 	"terraform/terraform-provider/provider/tf/core/process/compatibility"
 	coreschema "terraform/terraform-provider/provider/tf/core/schema"
 	"terraform/terraform-provider/provider/tf/core/translator"
+	apiresponsediff "terraform/terraform-provider/provider/tf/core/warnings/api_response_diff"
 )
 
 // API_V2_THRESHOLD_VERSION defines the minimum version that requires API V2
@@ -187,16 +188,19 @@ func orchestrateWithAPIFunction[TF model.TFModel, API api.APIModel, PRE process.
 	var nilTF TF
 	operationAPICallWasSuccesfull := false
 
+	// Pre-process the request
 	tfObject, err := callPreProcessor(requestContext, preProcessor, processData)
 	if common.HasErrorOrNil(err, tfObject) {
 		return nilTF, operationAPICallWasSuccesfull, err
 	}
 
+	// Convert the Terraform model to an API model
 	apiObject, err := trans.ToAPIModel(requestContext, translationData, tfObject)
 	if common.HasErrorOrNil(err, apiObject) {
 		return nilTF, operationAPICallWasSuccesfull, err
 	}
 
+	// Call the external API
 	apiResponse, err := externalAPIFunc(requestContext, client, apiObject)
 	if common.HasErrorOrNil(err, apiResponse) {
 		return nilTF, operationAPICallWasSuccesfull, err
@@ -204,22 +208,54 @@ func orchestrateWithAPIFunction[TF model.TFModel, API api.APIModel, PRE process.
 
 	operationAPICallWasSuccesfull = true
 
+	// Convert the API model back to a Terraform model
 	tfObject, err = trans.ToTFModel(requestContext, translationData, apiResponse)
 	if common.HasErrorOrNil(err, tfObject) {
 		return nilTF, operationAPICallWasSuccesfull, err
 	}
 
+	// For Create/Update operations: ensure API response matches plan expectations
+	err = ensurePlanConsistency(requestContext, processData, schema, tfObject)
+	if err != nil {
+		return nilTF, operationAPICallWasSuccesfull, err
+	}
+
+	// Post-process the response for resource-specific exceptions
+	// (e.g., computed fields, deprecated field mappings, _full fields for drift detection)
 	err = callPostProcessor(requestContext, postProcessor, processData, tfObject)
 	if common.HasErrorOrNil(err, tfObject) {
 		return nilTF, operationAPICallWasSuccesfull, err
 	}
 
+	// Post-process the response to nullify incompatible fields
 	err = compatibility.PostProcess(requestContext, tfObject, schema.GetCompatibilityOptions())
 	if err != nil {
 		return nilTF, operationAPICallWasSuccesfull, err
 	}
 
 	return tfObject, operationAPICallWasSuccesfull, nil
+}
+
+// ensurePlanConsistency validates API response against plan and restores plan values.
+// This prevents "inconsistent result after apply" errors by ensuring the tfObject matches plan expectations.
+// Only runs for Create/Update operations. Read/Delete operations preserve API response for drift detection.
+func ensurePlanConsistency[TF model.TFModel](requestContext *common.RequestContext, processData *process.ProcessData, schema coreschema.ResourceSchema, tfObject TF) error {
+	// Only apply for Create/Update operations
+	// Read/Delete operations preserve API response for drift detection
+	if requestContext.Operation != common.Create && requestContext.Operation != common.Update {
+		return nil
+	}
+
+	// Check for API response differences and warn user
+	// This detects when the API normalized or modified user input
+	err := apiresponsediff.CheckPlanVsApiResponseDelta(requestContext, processData, schema, tfObject)
+	if err != nil {
+		return err
+	}
+
+	// Restore all fields from plan to prevent "inconsistent result after apply" errors
+	// This is the default behavior - individual PostProcessors can override specific fields if needed
+	return process.RestoreAllFieldsFromPlan(requestContext, processData, tfObject)
 }
 
 func callPreProcessor[TF model.TFModel](requestContext *common.RequestContext, preProcessor process.PreProcessor[TF], processData *process.ProcessData) (TF, error) {

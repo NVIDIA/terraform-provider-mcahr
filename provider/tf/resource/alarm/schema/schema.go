@@ -20,7 +20,6 @@ import (
 	"terraform/terraform-provider/provider/tf/core"
 	defaultmodifiers "terraform/terraform-provider/provider/tf/core/plan/modifiers/default"
 	coreschema "terraform/terraform-provider/provider/tf/core/schema"
-	schemabuilder "terraform/terraform-provider/provider/tf/core/schema"
 	"terraform/terraform-provider/provider/tf/core/validators"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -43,7 +42,7 @@ var _ coreschema.ResourceSchema = &AlarmSchema{}
 // template fields for notifications, and computed fields.
 func (s *AlarmSchema) GetSchema() schema.Schema {
 
-	builder := schemabuilder.NewSchemaBuilder()
+	builder := coreschema.NewSchemaBuilder()
 
 	builder.AddMarkdownDescription("A condition that triggers Alerts or Actions.")
 
@@ -192,4 +191,21 @@ func (s *AlarmSchema) GetSchema() schema.Schema {
 
 func (s *AlarmSchema) GetCompatibilityOptions() map[string]attribute.CompatibilityOptions {
 	return map[string]attribute.CompatibilityOptions{}
+}
+
+func (s *AlarmSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
+	return map[string]coreschema.FieldComparisonRule{
+		// Skip deprecated query fields - they are server-controlled and ignored by API
+		"mute_query": {Behavior: coreschema.SkipComparison},
+		"raise_for":  {Behavior: coreschema.SkipComparison},
+
+		// Skip deprecated condition fields - they are server-controlled and ignored by API
+		"metric_name":     {Behavior: coreschema.SkipComparison},
+		"condition_type":  {Behavior: coreschema.SkipComparison},
+		"condition_value": {Behavior: coreschema.SkipComparison},
+
+		// Skip deprecated long template fields - they are server-controlled and ignored by API
+		"fire_long_template":    {Behavior: coreschema.SkipComparison},
+		"resolve_long_template": {Behavior: coreschema.SkipComparison},
+	}
 }

@@ -19,7 +19,6 @@ import (
 	"terraform/terraform-provider/provider/common/attribute"
 	nulls "terraform/terraform-provider/provider/tf/core/plan/modifiers/null"
 	coreschema "terraform/terraform-provider/provider/tf/core/schema"
-	schemabuilder "terraform/terraform-provider/provider/tf/core/schema"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -43,7 +42,7 @@ var _ coreschema.ResourceSchema = &RunbookSchema{}
 // and computed fields.
 func (s *RunbookSchema) GetSchema() schema.Schema {
 
-	builder := schemabuilder.NewSchemaBuilder()
+	builder := coreschema.NewSchemaBuilder()
 
 	builder.AddMarkdownDescription("Runbook resource for interactive notebooks of Op commands and user documentation")
 
@@ -316,6 +315,34 @@ func (s *RunbookSchema) GetCompatibilityOptions() map[string]attribute.Compatibi
 		},
 		"params_groups": {
 			MinVersion: "release-29.1.0",
+		},
+	}
+}
+
+func (s *RunbookSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
+	return map[string]coreschema.FieldComparisonRule{
+		// Skip minimal fields - they have _full variants for comparison
+		// The minimal fields will always differ (API adds defaults) which is expected
+		"cells": {
+			Behavior: coreschema.SkipComparison,
+			Reason:   "Has cells_full variant. Use cells_full for detecting API modifications.",
+		},
+		"params": {
+			Behavior: coreschema.SkipComparison,
+			Reason:   "Has params_full variant. Use params_full for detecting API modifications.",
+		},
+		"external_params": {
+			Behavior: coreschema.SkipComparison,
+			Reason:   "Has external_params_full variant. Use external_params_full for detecting API modifications.",
+		},
+
+		// NOTE: cells_full, params_full, external_params_full are NOT skipped
+		// They will be compared to detect real API modifications (like trimming whitespace)
+
+		// params_groups: User config can provide partial lists, API returns complete lists
+		"params_groups": {
+			Behavior: coreschema.SkipComparison,
+			Reason:   "User provides partial lists (e.g., only some exported params), API returns complete lists (all matching params).",
 		},
 	}
 }

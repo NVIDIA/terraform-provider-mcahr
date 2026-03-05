@@ -19,7 +19,6 @@ import (
 	"terraform/terraform-provider/provider/common/attribute"
 	"terraform/terraform-provider/provider/tf/core"
 	coreschema "terraform/terraform-provider/provider/tf/core/schema"
-	schemabuilder "terraform/terraform-provider/provider/tf/core/schema"
 	"terraform/terraform-provider/provider/tf/core/validators"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -37,7 +36,7 @@ var _ coreschema.ResourceSchema = &PrincipalSchema{}
 
 func (s *PrincipalSchema) GetSchema() schema.Schema {
 
-	builder := schemabuilder.NewSchemaBuilder()
+	builder := coreschema.NewSchemaBuilder()
 	builder.AddMarkdownDescription("Principal. An authorization group (e.g. Okta groups). Note: Admin privilege (in the platform) is required to create principal objects.")
 
 	// Required attributes
@@ -111,4 +110,8 @@ func (s *PrincipalSchema) GetCompatibilityOptions() map[string]attribute.Compati
 			MaxVersion: "release-28.99.999",
 		},
 	}
+}
+
+func (s *PrincipalSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
+	return coreschema.DefaultFieldComparisonRules()
 }

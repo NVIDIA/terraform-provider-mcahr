@@ -17,7 +17,7 @@ package file
 
 import (
 	"terraform/terraform-provider/provider/common/attribute"
-	schemabuilder "terraform/terraform-provider/provider/tf/core/schema"
+	coreschema "terraform/terraform-provider/provider/tf/core/schema"
 	"terraform/terraform-provider/provider/tf/core/validators"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -32,11 +32,11 @@ import (
 
 type FileSchema struct{}
 
-var _ schemabuilder.ResourceSchema = &FileSchema{}
+var _ coreschema.ResourceSchema = &FileSchema{}
 
 func (f *FileSchema) GetSchema() schema.Schema {
 
-	builder := schemabuilder.NewSchemaBuilder()
+	builder := coreschema.NewSchemaBuilder()
 
 	builder.AddMarkdownDescription("A datafile that is automatically copied/distributed to defined Resources.")
 
@@ -142,4 +142,8 @@ func (f *FileSchema) GetCompatibilityOptions() map[string]attribute.Compatibilit
 			MinVersion: "release-23.0.0",
 		},
 	}
+}
+
+func (s *FileSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
+	return coreschema.DefaultFieldComparisonRules()
 }

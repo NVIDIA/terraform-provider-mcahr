@@ -114,7 +114,7 @@ func (r *RunbookTranslatorCommon) buildRunbookStatement(requestContext *common.R
 	}
 	builder.SetField("params_groups", jsonParamsGroups, "params_groups")
 
-	apiCells, err := customattribute.MapCellsToAPIModel(tfModel.Cells.ValueString())
+	apiCells, err := customattribute.MapCellsToAPIModel(requestContext, tfModel.Cells.ValueString())
 	if err != nil {
 		return "", fmt.Errorf("failed to map cells to API model: %v", err)
 	}

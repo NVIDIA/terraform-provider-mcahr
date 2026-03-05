@@ -19,7 +19,6 @@ import (
 	"terraform/terraform-provider/provider/common/attribute"
 	planmodifiers "terraform/terraform-provider/provider/tf/core/plan/modifiers/default"
 	coreschema "terraform/terraform-provider/provider/tf/core/schema"
-	schemabuilder "terraform/terraform-provider/provider/tf/core/schema"
 	"terraform/terraform-provider/provider/tf/core/validators"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -40,7 +39,7 @@ var _ coreschema.ResourceSchema = &TimeTriggerSchema{}
 // including required fields (name, fire_query) and optional configuration fields.
 func (s *TimeTriggerSchema) GetSchema() schema.Schema {
 
-	builder := schemabuilder.NewSchemaBuilder()
+	builder := coreschema.NewSchemaBuilder()
 
 	builder.AddMarkdownDescription("A condition that triggers Notebooks.")
 
@@ -87,4 +86,8 @@ func (s *TimeTriggerSchema) GetSchema() schema.Schema {
 
 func (s *TimeTriggerSchema) GetCompatibilityOptions() map[string]attribute.CompatibilityOptions {
 	return map[string]attribute.CompatibilityOptions{}
+}
+
+func (s *TimeTriggerSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
+	return coreschema.DefaultFieldComparisonRules()
 }

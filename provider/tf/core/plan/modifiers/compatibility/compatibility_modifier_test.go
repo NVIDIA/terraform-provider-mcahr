@@ -21,6 +21,7 @@ import (
 
 	"terraform/terraform-provider/provider/common/attribute"
 	"terraform/terraform-provider/provider/common/version"
+	coreschema "terraform/terraform-provider/provider/tf/core/schema"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -65,6 +66,11 @@ func (m *MockResourceSchema) GetSchema() schema.Schema {
 func (m *MockResourceSchema) GetCompatibilityOptions() map[string]attribute.CompatibilityOptions {
 	args := m.Called()
 	return args.Get(0).(map[string]attribute.CompatibilityOptions)
+}
+
+func (m *MockResourceSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
+	args := m.Called()
+	return args.Get(0).(map[string]coreschema.FieldComparisonRule)
 }
 
 // Helper to create test plan

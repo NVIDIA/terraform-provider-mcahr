@@ -38,6 +38,9 @@ var (
 
 // CellJsonAPI is the API model for a cell
 type CellJsonAPI struct {
+	// Embedded config to be used in marshal/unmarshal functions
+	Config common.JsonConfig `json:"-"`
+
 	// Two type fields because of a backend bug
 	Type     string `json:"type"`                // output to API
 	CellType string `json:"cell_type,omitempty"` // input from API
@@ -47,6 +50,18 @@ type CellJsonAPI struct {
 	Enabled     bool   `json:"enabled"`
 	SecretAware bool   `json:"secret_aware" min_version:"release-28.1.0" skip_version_prefixes:"release-28.3"`
 	Description string `json:"description" min_version:"release-29.0.1"`
+}
+
+var _ json.Marshaler = &CellJsonAPI{}
+
+func (c *CellJsonAPI) MarshalJSON() ([]byte, error) {
+	options := map[string]any{"backend_version": c.Config.BackendVersion}
+	result := commonstruct.ApplyCustomStructTags(*c, options)
+
+	// CellType is only for input from API, remove it from output
+	delete(result, "cell_type")
+
+	return json.Marshal(result)
 }
 
 func (c *CellJsonAPI) ToInternalModel() *CellJson {
@@ -139,6 +154,7 @@ func (c *CellJson) GetConfig() common.JsonConfig {
 
 func (c *CellJson) ToAPIModel() *CellJsonAPI {
 	apiModel := &CellJsonAPI{
+		Config:      c.Config, // Pass the config (including BackendVersion) to the API model
 		Name:        c.Name,
 		Enabled:     c.Enabled,
 		SecretAware: c.SecretAware,
@@ -248,7 +264,7 @@ func validateOpAndMd(op common.Optional[string], md common.Optional[string]) err
 	return nil
 }
 
-func MapCellsToAPIModel(encodedCells string) (string, error) {
+func MapCellsToAPIModel(requestContext *common.RequestContext, encodedCells string) (string, error) {
 
 	var cells []CellJson
 	err := json.Unmarshal([]byte(encodedCells), &cells)
@@ -256,11 +272,15 @@ func MapCellsToAPIModel(encodedCells string) (string, error) {
 		return "", err
 	}
 
+	// Convert to API models and set backend version for proper version filtering
 	apiModels := make([]CellJsonAPI, len(cells))
 	for i, cell := range cells {
+		// Set backend version on the cell before conversion
+		cell.Config.BackendVersion = requestContext.BackendVersion
 		apiModels[i] = *cell.ToAPIModel()
 	}
 
+	// Marshal will automatically apply version filtering via CellJsonAPI.MarshalJSON
 	marshaledCells, err := json.Marshal(apiModels)
 	if err != nil {
 		return "", err

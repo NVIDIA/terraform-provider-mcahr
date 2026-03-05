@@ -18,6 +18,7 @@ package process
 import (
 	"fmt"
 	"terraform/terraform-provider/provider/common"
+	corecommon "terraform/terraform-provider/provider/tf/core/common"
 	"terraform/terraform-provider/provider/tf/core/process"
 	filetf "terraform/terraform-provider/provider/tf/resource/file/model"
 )
@@ -46,7 +47,7 @@ func (p *FilePostProcessor) PostProcessDelete(requestContext *common.RequestCont
 // Custom postprocess functions
 //
 
-func setFieldsFromPrevious(requestContext *common.RequestContext, data *process.ProcessData, config process.Getter, tfModel *filetf.FileTFModel) error {
+func setFieldsFromPrevious(requestContext *common.RequestContext, data *process.ProcessData, config corecommon.Getter, tfModel *filetf.FileTFModel) error {
 
 	var configModel filetf.FileTFModel
 	diags := config.Get(requestContext.Context, &configModel)

@@ -31,33 +31,28 @@ type DashboardPostProcessor struct{}
 var _ process.PostProcessor[*dashboardtf.DashboardTFModel] = &DashboardPostProcessor{}
 
 func (p *DashboardPostProcessor) PostProcessCreate(requestContext *common.RequestContext, data *process.ProcessData, tfModel *dashboardtf.DashboardTFModel) error {
-	return p.postProcessWithSource(requestContext, data.CreateRequest.Plan, tfModel)
-}
-
-func (p *DashboardPostProcessor) PostProcessRead(requestContext *common.RequestContext, data *process.ProcessData, tfModel *dashboardtf.DashboardTFModel) error {
-	return p.postProcessWithSource(requestContext, data.ReadRequest.State, tfModel)
-}
-
-func (p *DashboardPostProcessor) PostProcessUpdate(requestContext *common.RequestContext, data *process.ProcessData, tfModel *dashboardtf.DashboardTFModel) error {
-	return p.postProcessWithSource(requestContext, data.UpdateRequest.Plan, tfModel)
-}
-
-func (p *DashboardPostProcessor) PostProcessDelete(requestContext *common.RequestContext, data *process.ProcessData, tfModel *dashboardtf.DashboardTFModel) error {
-	// No post-processing needed for delete operation
+	// No post-processing needed for create - orchestrator's RestoreAllFieldsFromPlan handles restoration
 	return nil
 }
 
-func (p *DashboardPostProcessor) postProcessWithSource(requestContext *common.RequestContext, source process.Getter, tfModel *dashboardtf.DashboardTFModel) error {
-	// Process JSON fields first to populate _full attributes
+func (p *DashboardPostProcessor) PostProcessRead(requestContext *common.RequestContext, data *process.ProcessData, tfModel *dashboardtf.DashboardTFModel) error {
+	// Process JSON fields first to populate _full attributes from API response for drift detection
 	if err := postProcessJsonFullFields(requestContext, tfModel); err != nil {
 		return err
 	}
 
-	// Restore values from plan/state to avoid inconsistent values for json fields
-	if err := setFieldsFromPrevious(requestContext, source, tfModel); err != nil {
-		return err
-	}
+	// For READ, restore base fields from state (skip _full variants for drift detection)
+	// Keep _full fields from API response to enable drift detection
+	return restoreBaseFieldsFromState(requestContext, data.ReadRequest.State, tfModel)
+}
 
+func (p *DashboardPostProcessor) PostProcessUpdate(requestContext *common.RequestContext, data *process.ProcessData, tfModel *dashboardtf.DashboardTFModel) error {
+	// No post-processing needed for update - orchestrator's RestoreAllFieldsFromPlan handles restoration
+	return nil
+}
+
+func (p *DashboardPostProcessor) PostProcessDelete(requestContext *common.RequestContext, data *process.ProcessData, tfModel *dashboardtf.DashboardTFModel) error {
+	// No post-processing needed for delete operation
 	return nil
 }
 
@@ -99,7 +94,9 @@ func postProcessJsonFullField[T common.JsonConfigurable](fullField *types.String
 	return types.StringValue(overriddenValues), nil
 }
 
-func setFieldsFromPrevious(requestContext *common.RequestContext, source process.Getter, tfModel *dashboardtf.DashboardTFModel) error {
+// restoreBaseFieldsFromState restores base fields from state (excludes _full computed variants)
+// Used during READ to preserve user input while allowing _full fields to reflect API state for drift detection
+func restoreBaseFieldsFromState(requestContext *common.RequestContext, source process.Getter, tfModel *dashboardtf.DashboardTFModel) error {
 
 	var originalModel dashboardtf.DashboardTFModel
 	diags := source.Get(requestContext.Context, &originalModel)
@@ -107,7 +104,7 @@ func setFieldsFromPrevious(requestContext *common.RequestContext, source process
 		return fmt.Errorf("failed to get original model: %s", diags.Errors())
 	}
 
-	// Restore values from plan/state to avoid inconsistent values for json fields
+	// Restore base fields from state (skip _full variants to enable drift detection)
 	tfModel.Groups = originalModel.Groups
 	tfModel.Values = originalModel.Values
 

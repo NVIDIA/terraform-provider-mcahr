@@ -20,6 +20,7 @@ import (
 	"terraform/terraform-provider/provider/common"
 	"terraform/terraform-provider/provider/common/version"
 	customattribute "terraform/terraform-provider/provider/external_api/resources/report_templates/custom_attribute"
+	corecommon "terraform/terraform-provider/provider/tf/core/common"
 	"terraform/terraform-provider/provider/tf/core/process"
 	reporttemplatetf "terraform/terraform-provider/provider/tf/resource/report_template/model"
 
@@ -31,50 +32,24 @@ type ReportTemplatePostProcessor struct{}
 var _ process.PostProcessor[*reporttemplatetf.ReportTemplateTFModel] = &ReportTemplatePostProcessor{}
 
 func (p *ReportTemplatePostProcessor) PostProcessCreate(requestContext *common.RequestContext, data *process.ProcessData, tfModel *reporttemplatetf.ReportTemplateTFModel) error {
-	// Process JSON fields first to populate _full attributes
-	err := postProcessJsonFullFields(requestContext, tfModel)
-	if err != nil {
-		return err
-	}
-
-	// Restore values from plan/state to avoid inconsistent values for json fields
-	err = setFieldsFromPrevious(requestContext, data.CreateRequest.Plan, tfModel)
-	if err != nil {
-		return err
-	}
-
+	// No post-processing needed for create - orchestrator's RestoreAllFieldsFromPlan handles restoration
 	return nil
 }
 
 func (p *ReportTemplatePostProcessor) PostProcessRead(requestContext *common.RequestContext, data *process.ProcessData, tfModel *reporttemplatetf.ReportTemplateTFModel) error {
-	// Process JSON fields first to populate _full attributes
+	// Process JSON fields first to populate _full attributes from API response for drift detection
 	err := postProcessJsonFullFields(requestContext, tfModel)
 	if err != nil {
 		return err
 	}
 
-	// Restore values from plan/state to avoid inconsistent values for json fields
-	err = setFieldsFromPrevious(requestContext, data.ReadRequest.State, tfModel)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	// For READ, restore base fields from state (skip _full variants for drift detection)
+	// Keep _full fields from API response to enable drift detection
+	return restoreBaseFieldsFromState(requestContext, data.ReadRequest.State, tfModel)
 }
 
 func (p *ReportTemplatePostProcessor) PostProcessUpdate(requestContext *common.RequestContext, data *process.ProcessData, tfModel *reporttemplatetf.ReportTemplateTFModel) error {
-	// Process JSON fields first to populate _full attributes
-	err := postProcessJsonFullFields(requestContext, tfModel)
-	if err != nil {
-		return err
-	}
-
-	// Restore values from plan/state to avoid inconsistent values for json fields
-	err = setFieldsFromPrevious(requestContext, data.UpdateRequest.Plan, tfModel)
-	if err != nil {
-		return err
-	}
-
+	// No post-processing needed for update - orchestrator's RestoreAllFieldsFromPlan handles restoration
 	return nil
 }
 
@@ -121,7 +96,9 @@ func postProcessJsonFullField[T common.JsonConfigurable](fullField *types.String
 	return types.StringValue(overriddenValues), nil
 }
 
-func setFieldsFromPrevious(requestContext *common.RequestContext, source process.Getter, tfModel *reporttemplatetf.ReportTemplateTFModel) error {
+// restoreBaseFieldsFromState restores base fields from state (excludes _full computed variants)
+// Used during READ to preserve user input while allowing _full fields to reflect API state for drift detection
+func restoreBaseFieldsFromState(requestContext *common.RequestContext, source corecommon.Getter, tfModel *reporttemplatetf.ReportTemplateTFModel) error {
 
 	var originalModel reporttemplatetf.ReportTemplateTFModel
 	diags := source.Get(requestContext.Context, &originalModel)
@@ -129,7 +106,7 @@ func setFieldsFromPrevious(requestContext *common.RequestContext, source process
 		return fmt.Errorf("failed to get original model: %s", diags.Errors())
 	}
 
-	// Restore values from plan/state to avoid inconsistent values for json fields
+	// Restore base fields from state (skip _full variants to enable drift detection)
 	tfModel.Blocks = originalModel.Blocks
 	tfModel.Links = originalModel.Links
 

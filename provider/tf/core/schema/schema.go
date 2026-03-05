@@ -21,7 +21,39 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
+// FieldComparisonBehavior defines how a field should be handled in API response comparisons
+type FieldComparisonBehavior int
+
+const (
+	// CompareNormally - Compare the field normally (default behavior)
+	CompareNormally FieldComparisonBehavior = iota
+	// SkipComparison - Skip comparing this field entirely (differences are expected)
+	SkipComparison
+	// CustomComparison - Use a custom comparison function for this field
+	CustomComparison
+)
+
+// FieldComparisonRule defines how a specific field should be compared
+type FieldComparisonRule struct {
+	Behavior FieldComparisonBehavior
+	// CustomCompare is called when Behavior is CustomComparison
+	// Returns true if values are considered equal, false if they differ
+	// planValue and apiValue are the string representations of the field values
+	CustomCompare func(fieldName, planValue, apiValue string) bool
+	// Reason explains why this field has special comparison behavior (for documentation)
+	Reason string
+}
+
 type ResourceSchema interface {
 	GetSchema() schema.Schema
 	GetCompatibilityOptions() map[string]attribute.CompatibilityOptions
+	// GetFieldComparisonRules returns rules for how specific fields should be compared in API response warnings.
+	// Map key is the field name (tfsdk tag), value defines the comparison behavior.
+	GetFieldComparisonRules() map[string]FieldComparisonRule
+}
+
+// DefaultFieldComparisonRules provides a default empty implementation
+// for resources that don't need special field comparison rules
+func DefaultFieldComparisonRules() map[string]FieldComparisonRule {
+	return map[string]FieldComparisonRule{}
 }
