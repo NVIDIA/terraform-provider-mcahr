@@ -113,5 +113,13 @@ func (s *PrincipalSchema) GetCompatibilityOptions() map[string]attribute.Compati
 }
 
 func (s *PrincipalSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
-	return coreschema.DefaultFieldComparisonRules()
+	return map[string]coreschema.FieldComparisonRule{
+		// view_limit was removed from the backend API in release-29.0.0.
+		// Neither V1 nor V2 ToTFModel assigns it, so the API response will
+		// always differ from any plan value set by the user.
+		"view_limit": {
+			Behavior: coreschema.SkipComparison,
+			Reason:   "Deprecated field removed from API in release-29.0.0; never returned by the API.",
+		},
+	}
 }

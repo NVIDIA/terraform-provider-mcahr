@@ -33,8 +33,7 @@ type RunbookPostProcessor struct{}
 var _ process.PostProcessor[*runbooktf.RunbookTFModel] = &RunbookPostProcessor{}
 
 func (p *RunbookPostProcessor) PostProcessCreate(requestContext *common.RequestContext, data *process.ProcessData, tfModel *runbooktf.RunbookTFModel) (err error) {
-	// No post-processing needed for create - orchestrator's RestoreAllFieldsFromPlan handles restoration
-	return nil
+	return restoreParamsGroupsFromPlan(requestContext, data.CreateRequest.Plan, tfModel)
 }
 
 func (p *RunbookPostProcessor) PostProcessRead(requestContext *common.RequestContext, data *process.ProcessData, tfModel *runbooktf.RunbookTFModel) (err error) {
@@ -56,8 +55,7 @@ func (p *RunbookPostProcessor) PostProcessRead(requestContext *common.RequestCon
 }
 
 func (p *RunbookPostProcessor) PostProcessUpdate(requestContext *common.RequestContext, data *process.ProcessData, tfModel *runbooktf.RunbookTFModel) (err error) {
-	// No post-processing needed for update - orchestrator's RestoreAllFieldsFromPlan handles restoration
-	return nil
+	return restoreParamsGroupsFromPlan(requestContext, data.UpdateRequest.Plan, tfModel)
 }
 
 func (p *RunbookPostProcessor) PostProcessDelete(requestContext *common.RequestContext, data *process.ProcessData, tfModel *runbooktf.RunbookTFModel) error {
@@ -108,6 +106,31 @@ func postProcessJsonFullField[T common.JsonConfigurable](fullField *types.String
 	return types.StringValue(overriddenValues), nil
 }
 
+// restoreParamsGroupsFromPlan restores params_groups from a plan or state source to the model.
+// params_groups is set to null by NullObjectIfUnknownModifier when not configured by the user,
+// but the API always computes and returns it. Without explicit restoration, the API value leaks
+// into state, causing "inconsistent result after apply" errors.
+func restoreParamsGroupsFromPlan(requestContext *common.RequestContext, source corecommon.Getter, tfModel *runbooktf.RunbookTFModel) error {
+
+	var sourceModel runbooktf.RunbookTFModel
+	diags := source.Get(requestContext.Context, &sourceModel)
+	if diags.HasError() {
+		return fmt.Errorf("failed to get source model: %s", diags.Errors())
+	}
+
+	setParamsGroups(sourceModel.ParamsGroups, tfModel)
+	return nil
+}
+
+// setParamsGroups copies params_groups from a source value to the model, normalizing unknown to null.
+func setParamsGroups(source types.Object, tfModel *runbooktf.RunbookTFModel) {
+	if source.IsUnknown() {
+		tfModel.ParamsGroups = types.ObjectNull(converters.ParamsGroupsAttrTypes)
+	} else {
+		tfModel.ParamsGroups = source
+	}
+}
+
 // restoreBaseFieldsFromState restores base fields and special fields from state (excludes _full computed variants)
 // Used during READ to preserve user input while allowing _full fields to reflect API state for drift detection
 func restoreBaseFieldsFromState(requestContext *common.RequestContext, source corecommon.Getter, tfModel *runbooktf.RunbookTFModel) error {
@@ -126,12 +149,7 @@ func restoreBaseFieldsFromState(requestContext *common.RequestContext, source co
 	// Restore special feature field
 	tfModel.Data = originalModel.Data
 
-	// If the params_groups is unknown, set it to null
-	if originalModel.ParamsGroups.IsUnknown() {
-		tfModel.ParamsGroups = types.ObjectNull(converters.ParamsGroupsAttrTypes)
-	} else {
-		tfModel.ParamsGroups = originalModel.ParamsGroups
-	}
+	setParamsGroups(originalModel.ParamsGroups, tfModel)
 
 	return nil
 }

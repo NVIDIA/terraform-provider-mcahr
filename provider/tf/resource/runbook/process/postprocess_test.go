@@ -23,11 +23,29 @@ import (
 	"terraform/terraform-provider/provider/common"
 	"terraform/terraform-provider/provider/common/version"
 	runbooktf "terraform/terraform-provider/provider/tf/resource/runbook/model"
+	converters "terraform/terraform-provider/provider/tf/resource/runbook/translator/object_converters"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// runbookModelGetter is a test helper that implements corecommon.Getter for RunbookTFModel.
+type runbookModelGetter struct {
+	model runbooktf.RunbookTFModel
+}
+
+func (g *runbookModelGetter) Get(_ context.Context, target interface{}) diag.Diagnostics {
+	*(target.(*runbooktf.RunbookTFModel)) = g.model
+	return nil
+}
+
+func (g *runbookModelGetter) GetAttribute(_ context.Context, _ path.Path, _ interface{}) diag.Diagnostics {
+	return nil
+}
 
 // Mock implementation of JsonConfigurable for testing
 type MockJsonConfigurable struct {
@@ -144,6 +162,136 @@ func TestPostProcessJsonFields_WithInvalidJSON(t *testing.T) {
 	// then
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid character")
+}
+
+// TestSetParamsGroups tests the setParamsGroups helper directly.
+func TestSetParamsGroups(t *testing.T) {
+	t.Parallel()
+
+	knownParamsGroups, _ := types.ObjectValue(
+		converters.ParamsGroupsAttrTypes,
+		map[string]attr.Value{
+			"required": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("p1")}),
+			"optional": types.ListValueMust(types.StringType, []attr.Value{}),
+			"exported": types.ListValueMust(types.StringType, []attr.Value{}),
+			"external": types.ListValueMust(types.StringType, []attr.Value{}),
+		},
+	)
+
+	tests := []struct {
+		name           string
+		source         types.Object
+		expectNull     bool
+		expectSameAsIn bool
+	}{
+		{
+			name:       "null source is copied as-is (null in plan = intentional)",
+			source:     types.ObjectNull(converters.ParamsGroupsAttrTypes),
+			expectNull: true,
+		},
+		{
+			name:       "unknown source is normalized to null",
+			source:     types.ObjectUnknown(converters.ParamsGroupsAttrTypes),
+			expectNull: true,
+		},
+		{
+			name:           "known source is copied as-is",
+			source:         knownParamsGroups,
+			expectNull:     false,
+			expectSameAsIn: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			apiModel := &runbooktf.RunbookTFModel{
+				ParamsGroups: knownParamsGroups,
+			}
+
+			setParamsGroups(tt.source, apiModel)
+
+			if tt.expectNull {
+				assert.True(t, apiModel.ParamsGroups.IsNull())
+			} else if tt.expectSameAsIn {
+				assert.Equal(t, tt.source, apiModel.ParamsGroups)
+			}
+		})
+	}
+}
+
+// TestRestoreParamsGroupsFromPlan tests that params_groups is correctly restored from the plan,
+// overriding whatever the API returned.
+func TestRestoreParamsGroupsFromPlan(t *testing.T) {
+	t.Parallel()
+
+	apiComputedParamsGroups, _ := types.ObjectValue(
+		converters.ParamsGroupsAttrTypes,
+		map[string]attr.Value{
+			"required": types.ListValueMust(types.StringType, []attr.Value{}),
+			"optional": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("p1")}),
+			"exported": types.ListValueMust(types.StringType, []attr.Value{}),
+			"external": types.ListValueMust(types.StringType, []attr.Value{}),
+		},
+	)
+
+	tests := []struct {
+		name                  string
+		planParamsGroups      types.Object
+		expectNullInModel     bool
+		expectAPIValueInModel bool
+	}{
+		{
+			name:              "null in plan (user did not configure) → null in state, API value discarded",
+			planParamsGroups:  types.ObjectNull(converters.ParamsGroupsAttrTypes),
+			expectNullInModel: true,
+		},
+		{
+			name:              "unknown in plan → normalized to null, API value discarded",
+			planParamsGroups:  types.ObjectUnknown(converters.ParamsGroupsAttrTypes),
+			expectNullInModel: true,
+		},
+		{
+			name: "configured in plan → plan value wins over API value",
+			planParamsGroups: func() types.Object {
+				v, _ := types.ObjectValue(
+					converters.ParamsGroupsAttrTypes,
+					map[string]attr.Value{
+						"required": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("p1")}),
+						"optional": types.ListValueMust(types.StringType, []attr.Value{}),
+						"exported": types.ListValueMust(types.StringType, []attr.Value{}),
+						"external": types.ListValueMust(types.StringType, []attr.Value{}),
+					},
+				)
+				return v
+			}(),
+			expectNullInModel: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			requestContext := common.NewRequestContext(ctx).WithOperation(common.Create)
+
+			planGetter := &runbookModelGetter{
+				model: runbooktf.RunbookTFModel{ParamsGroups: tt.planParamsGroups},
+			}
+			apiModel := &runbooktf.RunbookTFModel{
+				ParamsGroups: apiComputedParamsGroups,
+			}
+
+			err := restoreParamsGroupsFromPlan(requestContext, planGetter, apiModel)
+
+			require.NoError(t, err)
+			if tt.expectNullInModel {
+				assert.True(t, apiModel.ParamsGroups.IsNull(), "expected params_groups to be null")
+			} else {
+				assert.Equal(t, tt.planParamsGroups, apiModel.ParamsGroups)
+			}
+		})
+	}
 }
 
 // TestPostProcessJsonFullField_GenericType tests the generic postProcessJsonFullField function

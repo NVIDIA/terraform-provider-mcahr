@@ -344,5 +344,12 @@ func (s *RunbookSchema) GetFieldComparisonRules() map[string]coreschema.FieldCom
 			Behavior: coreschema.SkipComparison,
 			Reason:   "User provides partial lists (e.g., only some exported params), API returns complete lists (all matching params).",
 		},
+
+		// data: TF-only input field that allows loading a full runbook JSON via file().
+		// Neither V1 nor V2 ToTFModel ever assigns this field — the API never returns it.
+		"data": {
+			Behavior: coreschema.SkipComparison,
+			Reason:   "TF-only input field (e.g. file()); never returned by the API.",
+		},
 	}
 }

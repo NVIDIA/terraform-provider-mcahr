@@ -145,5 +145,19 @@ func (f *FileSchema) GetCompatibilityOptions() map[string]attribute.Compatibilit
 }
 
 func (s *FileSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
-	return coreschema.DefaultFieldComparisonRules()
+	skipReason := "field is TF-only and is never returned by the API; differences are always expected"
+	return map[string]coreschema.FieldComparisonRule{
+		"inline_data": {
+			Behavior: coreschema.SkipComparison,
+			Reason:   skipReason,
+		},
+		"input_file": {
+			Behavior: coreschema.SkipComparison,
+			Reason:   skipReason,
+		},
+		"md5": {
+			Behavior: coreschema.SkipComparison,
+			Reason:   skipReason,
+		},
+	}
 }

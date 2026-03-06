@@ -416,5 +416,13 @@ func (s *IntegrationSchema) GetCompatibilityOptions() map[string]attribute.Compa
 }
 
 func (s *IntegrationSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
-	return coreschema.DefaultFieldComparisonRules()
+	return map[string]coreschema.FieldComparisonRule{
+		// cache_ttl is a deprecated alias for cache_ttl_ms. No adapter ever populates
+		// it in ToTFModel — the API only returns cache_ttl_ms. Differences are always
+		// expected and should not surface as warnings.
+		"cache_ttl": {
+			Behavior: coreschema.SkipComparison,
+			Reason:   "Deprecated alias for cache_ttl_ms; never returned by the API.",
+		},
+	}
 }
