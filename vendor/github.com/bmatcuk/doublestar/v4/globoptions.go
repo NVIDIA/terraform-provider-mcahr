@@ -4,7 +4,7 @@ import "strings"
 
 // glob is an internal type to store options during globbing.
 type glob struct {
-	caseInsensitive       bool
+	caseInsensitive  bool
 	failOnIOErrors        bool
 	failOnPatternNotExist bool
 	filesOnly             bool
