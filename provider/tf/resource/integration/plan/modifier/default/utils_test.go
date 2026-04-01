@@ -144,26 +144,6 @@ func TestIsServiceNameCompatible(t *testing.T) {
 			expected:      false,
 		},
 
-		// Elastic tests
-		{
-			name:          "Elastic - api_key compatible (TF field name)",
-			serviceName:   "elastic",
-			attributeName: "api_key",
-			expected:      true,
-		},
-		{
-			name:          "Elastic - api_url compatible (TF field name)",
-			serviceName:   "elastic",
-			attributeName: "api_url",
-			expected:      true,
-		},
-		{
-			name:          "Elastic - incompatible attribute",
-			serviceName:   "elastic",
-			attributeName: "api_token", // This is the data field name, not TF field name
-			expected:      false,
-		},
-
 		// Fluentbit Elastic tests
 		{
 			name:          "Fluentbit Elastic - api_url compatible",
@@ -378,7 +358,6 @@ func TestIsServiceNameCompatible_AllSupportedServices(t *testing.T) {
 		"bcm",
 		"bcm_connectivity",
 		"datadog",
-		"elastic",
 		"fluentbit_elastic",
 		"google_cloud_identity",
 		"nvault",

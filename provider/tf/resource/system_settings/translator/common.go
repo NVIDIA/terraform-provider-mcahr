@@ -80,7 +80,6 @@ func (t *SystemSettingsTranslatorCommon) buildUpdateStatement(requestContext *co
 		SetField("approval_optional_request_ticket_url", tfModel.ApprovalOptionalRequestTicketURL.ValueBool(), "approval_optional_request_ticket_url").
 		MaybeSetStringField("time_trigger_permissions_user", tfModel.TimeTriggerPermissionsUser.ValueString(), "time_trigger_permissions_user", common.IsAttrKnown(tfModel.TimeTriggerPermissionsUser)).
 		SetField("external_audit_storage_enabled", tfModel.ExternalAuditStorageEnabled.ValueBool(), "external_audit_storage_enabled").
-		SetStringField("external_audit_storage_type", tfModel.ExternalAuditStorageType.ValueString(), "external_audit_storage_type").
 		SetField("external_audit_storage_batch_period_sec", tfModel.ExternalAuditStorageBatchPeriodSec.ValueInt64(), "external_audit_storage_batch_period_sec").
 		SetStringField("environment_name", tfModel.EnvironmentName.ValueString(), "environment_name").
 		SetStringField("environment_name_background", tfModel.EnvironmentNameBackground.ValueString(), "environment_name_background").

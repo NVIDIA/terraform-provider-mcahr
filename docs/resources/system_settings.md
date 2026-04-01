@@ -34,7 +34,7 @@ System-level settings. Note: there must only be one instance of this terraform r
 - `environment_name_background` (String) The background color for the environment name.
 - `external_audit_storage_batch_period_sec` (Number) External audit storage batch period in seconds.
 - `external_audit_storage_enabled` (Boolean) If external audit storage is enabled.
-- `external_audit_storage_type` (String) The type of external audit storage.
+- `external_audit_storage_type` (String, Deprecated) **Deprecated** The type of external audit storage.
 - `maintenance_mode_enabled` (Boolean) If maintenance mode is enabled.
 - `managed_secrets` (String) The type of managed secrets.
 - `parallel_runs_fired_by_time_triggers` (Number) Number of parallel runs fired by time triggers.

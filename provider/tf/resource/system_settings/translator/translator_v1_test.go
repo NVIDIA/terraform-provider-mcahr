@@ -57,7 +57,8 @@ func TestSystemSettingsTranslatorV1_ToTFModel_Success(t *testing.T) {
 	assert.Equal(t, false, result.ApprovalOptionalRequestTicketURL.ValueBool())
 	assert.Equal(t, "test_user", result.TimeTriggerPermissionsUser.ValueString())
 	assert.Equal(t, false, result.ExternalAuditStorageEnabled.ValueBool())
-	assert.Equal(t, "ELASTIC", result.ExternalAuditStorageType.ValueString())
+	// Deprecated: external_audit_storage_type is still read from the API but no longer sent to the backend
+	assert.Equal(t, "", result.ExternalAuditStorageType.ValueString())
 	assert.Equal(t, int64(5), result.ExternalAuditStorageBatchPeriodSec.ValueInt64())
 	assert.Equal(t, "", result.EnvironmentName.ValueString())
 	assert.Equal(t, "#EF5350", result.EnvironmentNameBackground.ValueString())
@@ -131,7 +132,7 @@ func createFullSystemSettingsResponseV1() *systemsettingsapi.SystemSettingsRespo
 				ApprovalOptionalRequestTicketURL:            false,
 				TimeTriggerPermissionsUser:                  "test_user",
 				ExternalAuditStorageEnabled:                 false,
-				ExternalAuditStorageType:                    "ELASTIC",
+				ExternalAuditStorageType:                    "", // Deprecated: no longer sent to the backend
 				ExternalAuditStorageBatchPeriodSec:          5,
 				EnvironmentName:                             "",
 				EnvironmentNameBackground:                   "#EF5350",

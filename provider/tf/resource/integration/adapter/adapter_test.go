@@ -176,20 +176,6 @@ func TestMapToTFData(t *testing.T) {
 			},
 		},
 		{
-			name: "Valid Elastic data with field mapping",
-			integrationData: map[string]interface{}{
-				"api_token": "elastic-token", // Data field name
-				"url":       "https://elastic.example.com",
-			},
-			serviceName: "elastic",
-			expectError: false,
-			validate: func(t *testing.T, tfModel *integrationtf.IntegrationTFModel) {
-				// Should map to TF field names
-				assert.Equal(t, "elastic-token", tfModel.APIKey.ValueString())
-				assert.Equal(t, "https://elastic.example.com", tfModel.APIUrl.ValueString())
-			},
-		},
-		{
 			name: "Valid NVault data",
 			integrationData: map[string]interface{}{
 				"address":       "https://vault.example.com:8200",

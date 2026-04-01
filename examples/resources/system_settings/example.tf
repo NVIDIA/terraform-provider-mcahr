@@ -18,7 +18,6 @@ resource "mcahr_system_settings" "system_settings" {
   parallel_runs_fired_by_time_triggers             = 5
   # Audit
   external_audit_storage_enabled          = false
-  external_audit_storage_type             = "ELASTIC"
   external_audit_storage_batch_period_sec = 10
   # General
   environment_name            = "Env_Name via TF"

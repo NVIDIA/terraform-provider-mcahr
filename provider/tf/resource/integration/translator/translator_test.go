@@ -231,10 +231,10 @@ func TestIntegrationTranslator_ToTFModel(t *testing.T) {
 								Enabled:         true,
 								SerialNumber:    "FIRST001",
 								PermissionsUser: "first@company.com",
-								IntegrationType: "ELASTIC",
+								IntegrationType: "ALERTMANAGER",
 								IntegrationData: map[string]interface{}{
-									"api_token": "first-token",
-									"url":       "https://first.elastic.co",
+									"external_url":  "https://first.alertmanager.com",
+									"payload_paths": []interface{}{"alerts.receiver", "alerts.status"},
 								},
 							},
 							{
@@ -257,7 +257,7 @@ func TestIntegrationTranslator_ToTFModel(t *testing.T) {
 			validate: func(t *testing.T, tfModel *integrationtf.IntegrationTFModel) {
 				// Should return the first integration
 				assert.Equal(t, "first-integration", tfModel.Name.ValueString())
-				assert.Equal(t, "elastic", tfModel.ServiceName.ValueString())
+				assert.Equal(t, "alertmanager", tfModel.ServiceName.ValueString())
 				assert.Equal(t, "FIRST001", tfModel.SerialNumber.ValueString())
 				assert.True(t, tfModel.Enabled.ValueBool())
 			},

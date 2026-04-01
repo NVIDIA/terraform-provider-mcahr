@@ -60,7 +60,6 @@ func (s *IntegrationSchema) GetSchema() schema.Schema {
 	addGoogleCloudIdentitySchema(builder)
 	addBcmSchema(builder)
 	addBcmConnectivitySchema(builder)
-	addElasticSchema(builder)
 	addFluentbitElasticSchema(builder)
 	addNvaultSchema(builder)
 
@@ -309,10 +308,6 @@ func addBcmConnectivitySchema(builder *coreschema.SchemaBuilder) {
 		},
 	})
 
-}
-
-func addElasticSchema(builder *coreschema.SchemaBuilder) {
-	// NOTE: api_key and api_url are defined in shared schema
 }
 
 func addFluentbitElasticSchema(builder *coreschema.SchemaBuilder) {

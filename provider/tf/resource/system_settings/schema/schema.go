@@ -169,8 +169,9 @@ func (s *SystemSettingsSchema) GetSchema() schema.Schema {
 	builder.AddAttribute("external_audit_storage_type", schema.StringAttribute{
 		Optional:            true,
 		Computed:            true,
-		Default:             stringdefault.StaticString("ELASTIC"),
-		MarkdownDescription: "The type of external audit storage.",
+		Default:             stringdefault.StaticString(""),
+		MarkdownDescription: "**Deprecated** The type of external audit storage.",
+		DeprecationMessage:  "This field is deprecated and will be ignored. It is accepted for backward compatibility but it's no longer sent to the backend.",
 		PlanModifiers:       []planmodifier.String{defaultmodifiers.IgnoreWhitespaceModifier()},
 	})
 
@@ -265,5 +266,10 @@ func (s *SystemSettingsSchema) GetCompatibilityOptions() map[string]attribute.Co
 }
 
 func (s *SystemSettingsSchema) GetFieldComparisonRules() map[string]coreschema.FieldComparisonRule {
-	return coreschema.DefaultFieldComparisonRules()
+	return map[string]coreschema.FieldComparisonRule{
+		"external_audit_storage_type": {
+			Behavior: coreschema.SkipComparison,
+			Reason:   "Deprecated field; no longer sent to the backend.",
+		},
+	}
 }

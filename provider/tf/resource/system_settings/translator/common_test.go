@@ -70,7 +70,6 @@ func TestSystemSettingsTranslatorCommon_ToAPIModel(t *testing.T) {
 				"approval_optional_request_ticket_url=true, " +
 				"time_trigger_permissions_user=\"test_user\", " +
 				"external_audit_storage_enabled=true, " +
-				"external_audit_storage_type=\"SPLUNK\", " +
 				"external_audit_storage_batch_period_sec=15, " +
 				"environment_name=\"test_env\", " +
 				"environment_name_background=\"#FF0000\", " +
@@ -120,7 +119,6 @@ func TestSystemSettingsTranslatorCommon_ToAPIModel_WithStringArrays(t *testing.T
 		"approval_optional_request_ticket_url=false, " +
 		"time_trigger_permissions_user=\"test_user\", " +
 		"external_audit_storage_enabled=false, " +
-		"external_audit_storage_type=\"ELASTIC\", " +
 		"external_audit_storage_batch_period_sec=5, " +
 		"environment_name=\"\", " +
 		"environment_name_background=\"#EF5350\", " +
@@ -165,7 +163,7 @@ func createTestSystemSettingsTFModel() *systemsettingstf.SystemSettingsTFModel {
 		ApprovalOptionalRequestTicketURL:            types.BoolValue(true),
 		TimeTriggerPermissionsUser:                  types.StringValue("test_user"),
 		ExternalAuditStorageEnabled:                 types.BoolValue(true),
-		ExternalAuditStorageType:                    types.StringValue("SPLUNK"),
+		ExternalAuditStorageType:                    types.StringValue(""), // Deprecated: accepted but not sent to the backend
 		ExternalAuditStorageBatchPeriodSec:          types.Int64Value(15),
 		EnvironmentName:                             types.StringValue("test_env"),
 		EnvironmentNameBackground:                   types.StringValue("#FF0000"),
@@ -204,7 +202,7 @@ func createTestSystemSettingsTFModelWithArrays() *systemsettingstf.SystemSetting
 		ApprovalOptionalRequestTicketURL:            types.BoolValue(false),
 		TimeTriggerPermissionsUser:                  types.StringValue("test_user"),
 		ExternalAuditStorageEnabled:                 types.BoolValue(false),
-		ExternalAuditStorageType:                    types.StringValue("ELASTIC"),
+		ExternalAuditStorageType:                    types.StringValue(""), // Deprecated: accepted but not sent to the backend
 		ExternalAuditStorageBatchPeriodSec:          types.Int64Value(5),
 		EnvironmentName:                             types.StringValue(""),
 		EnvironmentNameBackground:                   types.StringValue("#EF5350"),

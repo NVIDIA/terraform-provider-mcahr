@@ -86,12 +86,12 @@ func TestIntegrationTranslatorV1_ToTFModel(t *testing.T) {
 				DefineIntegration: &integrationapi.IntegrationContainerV1{
 					IntegrationClasses: []integrationapi.IntegrationClassV1{
 						{
-							Name:            "elastic-v1-create",
-							ServiceName:     "elastic",
-							SerialNumber:    "ELK001",
+							Name:            "alertmanager-v1-create",
+							ServiceName:     "alertmanager",
+							SerialNumber:    "AM001",
 							Enabled:         false,
-							PermissionsUser: "elastic@company.com",
-							Params:          `{"api_token":"elastic-token-456","url":"https://elastic.company.com:9243"}`,
+							PermissionsUser: "alertmanager@company.com",
+							Params:          `{"external_url":"https://alertmanager.company.com","payload_paths":["alerts.receiver","alerts.status"]}`,
 						},
 					},
 				},
@@ -99,15 +99,16 @@ func TestIntegrationTranslatorV1_ToTFModel(t *testing.T) {
 			expectError: false,
 			expectNil:   false,
 			validate: func(t *testing.T, tfModel *integrationtf.IntegrationTFModel) {
-				assert.Equal(t, "elastic-v1-create", tfModel.Name.ValueString())
-				assert.Equal(t, "elastic", tfModel.ServiceName.ValueString())
-				assert.Equal(t, "ELK001", tfModel.SerialNumber.ValueString())
+				assert.Equal(t, "alertmanager-v1-create", tfModel.Name.ValueString())
+				assert.Equal(t, "alertmanager", tfModel.ServiceName.ValueString())
+				assert.Equal(t, "AM001", tfModel.SerialNumber.ValueString())
 				assert.False(t, tfModel.Enabled.ValueBool())
-				assert.Equal(t, "elastic@company.com", tfModel.PermissionsUser.ValueString())
+				assert.Equal(t, "alertmanager@company.com", tfModel.PermissionsUser.ValueString())
 
-				// Check Elastic-specific fields (api_token maps to APIKey, url maps to APIUrl)
-				assert.Equal(t, "elastic-token-456", tfModel.APIKey.ValueString())
-				assert.Equal(t, "https://elastic.company.com:9243", tfModel.APIUrl.ValueString())
+				// Check Alertmanager-specific fields
+				assert.Equal(t, "https://alertmanager.company.com", tfModel.ExternalUrl.ValueString())
+				assert.False(t, tfModel.PayloadPaths.IsNull())
+				assert.Len(t, tfModel.PayloadPaths.Elements(), 2)
 			},
 		},
 		{

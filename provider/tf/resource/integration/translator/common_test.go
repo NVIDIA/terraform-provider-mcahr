@@ -312,23 +312,6 @@ func TestIntegrationTranslatorCommon_BuildUpdateStatement(t *testing.T) {
 			},
 		},
 		{
-			name: "Valid Elastic update",
-			tfModel: &integrationtf.IntegrationTFModel{
-				Name:            types.StringValue("elastic-update"),
-				ServiceName:     types.StringValue("elastic"),
-				SerialNumber:    types.StringValue("ELK003"),
-				Enabled:         types.BoolValue(false),
-				PermissionsUser: types.StringValue("elastic@company.com"),
-				APIKey:          types.StringValue("updated-elastic-token"),
-				APIUrl:          types.StringValue("https://elastic-updated.company.com:9243"),
-			},
-			expectError: false,
-			validate: func(t *testing.T, statement string) {
-				expected := `update_integration(integration_name="elastic-update", serial_number="ELK003", enabled=false, permissions_user="elastic@company.com", params={"api_token":"updated-elastic-token","url":"https://elastic-updated.company.com:9243"})`
-				assert.Equal(t, expected, statement)
-			},
-		},
-		{
 			name: "Update with unsupported service",
 			tfModel: &integrationtf.IntegrationTFModel{
 				Name:        types.StringValue("unsupported-update"),
