@@ -425,15 +425,15 @@ func TestIntegrationTranslatorCommon_BuildIntegrationStatement(t *testing.T) {
 			statementName: "update_integration",
 			tfModel: &integrationtf.IntegrationTFModel{
 				Name:            types.StringValue("update-test"),
-				ServiceName:     types.StringValue("fluentbit_elastic"),
-				SerialNumber:    types.StringValue("FBE001"),
+				ServiceName:     types.StringValue("alertmanager"),
+				SerialNumber:    types.StringValue("AM001"),
 				Enabled:         types.BoolValue(false),
-				PermissionsUser: types.StringValue("fluentbit@company.com"),
-				APIUrl:          types.StringValue("https://fluent.elastic.co:9200"),
+				PermissionsUser: types.StringValue("alerts@company.com"),
+				ExternalUrl:     types.StringValue("https://alertmanager.company.com"),
 			},
 			expectError: false,
 			validate: func(t *testing.T, statement string) {
-				expected := `update_integration(integration_name="update-test", serial_number="FBE001", enabled=false, permissions_user="fluentbit@company.com", params={"url":"https://fluent.elastic.co:9200"})`
+				expected := `update_integration(integration_name="update-test", serial_number="AM001", enabled=false, permissions_user="alerts@company.com", params={"external_url":"https://alertmanager.company.com","payload_paths":[]})`
 				assert.Equal(t, expected, statement)
 			},
 		},

@@ -422,10 +422,13 @@ func TestAdapter_RoundTrip(t *testing.T) {
 	adapterOptions := &adapterinterface.IntegrationDataAdapterOptions{CompatibilityOptions: compatibilityOptions}
 
 	// Test round-trip conversion: TF Model -> Map -> JSON -> Map -> TF Model
-	t.Run("Fluentbit Elastic round trip", func(t *testing.T) {
+	t.Run("NVault round trip", func(t *testing.T) {
 		original := &integrationtf.IntegrationTFModel{
-			ServiceName: types.StringValue("fluentbit_elastic"),
-			APIUrl:      types.StringValue("https://fluentbit.elastic.co:9200"),
+			ServiceName: types.StringValue("nvault"),
+			Address:     types.StringValue("https://vault.example.com:8200"),
+			Namespace:   types.StringValue("admin/test"),
+			RoleName:    types.StringValue("test-role"),
+			JWTAuthPath: types.StringValue("auth/jwt"),
 		}
 
 		// TF -> Map
@@ -438,21 +441,27 @@ func TestAdapter_RoundTrip(t *testing.T) {
 
 		// JSON -> TF
 		recovered := &integrationtf.IntegrationTFModel{
-			ServiceName: types.StringValue("fluentbit_elastic"),
+			ServiceName: types.StringValue("nvault"),
 		}
 		err = JSONToTFData(common.NewRequestContext(context.Background()), adapterOptions, jsonData, recovered)
 		require.NoError(t, err)
 
 		// Verify round-trip integrity
-		assert.Equal(t, original.APIUrl.ValueString(), recovered.APIUrl.ValueString())
+		assert.Equal(t, original.Address.ValueString(), recovered.Address.ValueString())
+		assert.Equal(t, original.Namespace.ValueString(), recovered.Namespace.ValueString())
+		assert.Equal(t, original.RoleName.ValueString(), recovered.RoleName.ValueString())
+		assert.Equal(t, original.JWTAuthPath.ValueString(), recovered.JWTAuthPath.ValueString())
 
 		// Map -> TF
 		recovered2 := &integrationtf.IntegrationTFModel{
-			ServiceName: types.StringValue("fluentbit_elastic"),
+			ServiceName: types.StringValue("nvault"),
 		}
 		err = MapToTFData(common.NewRequestContext(context.Background()), adapterOptions, mapData, recovered2)
 		require.NoError(t, err)
 
-		assert.Equal(t, original.APIUrl.ValueString(), recovered2.APIUrl.ValueString())
+		assert.Equal(t, original.Address.ValueString(), recovered2.Address.ValueString())
+		assert.Equal(t, original.Namespace.ValueString(), recovered2.Namespace.ValueString())
+		assert.Equal(t, original.RoleName.ValueString(), recovered2.RoleName.ValueString())
+		assert.Equal(t, original.JWTAuthPath.ValueString(), recovered2.JWTAuthPath.ValueString())
 	})
 }

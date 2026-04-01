@@ -267,7 +267,7 @@ func TestIntegrationTranslatorV1_ToTFModel(t *testing.T) {
 					IntegrationClasses: []integrationapi.IntegrationClassV1{
 						{
 							Name:            "empty-params-integration",
-							ServiceName:     "fluentbit_elastic",
+							ServiceName:     "alertmanager",
 							SerialNumber:    "EMPTY001",
 							Enabled:         false,
 							PermissionsUser: "empty@company.com",
@@ -280,13 +280,13 @@ func TestIntegrationTranslatorV1_ToTFModel(t *testing.T) {
 			expectNil:   false,
 			validate: func(t *testing.T, tfModel *integrationtf.IntegrationTFModel) {
 				assert.Equal(t, "empty-params-integration", tfModel.Name.ValueString())
-				assert.Equal(t, "fluentbit_elastic", tfModel.ServiceName.ValueString())
+				assert.Equal(t, "alertmanager", tfModel.ServiceName.ValueString())
 				assert.Equal(t, "EMPTY001", tfModel.SerialNumber.ValueString())
 				assert.False(t, tfModel.Enabled.ValueBool())
 				assert.Equal(t, "empty@company.com", tfModel.PermissionsUser.ValueString())
 
 				// Fields should have default/empty values
-				assert.Equal(t, "", tfModel.APIUrl.ValueString())
+				assert.Equal(t, "", tfModel.ExternalUrl.ValueString())
 			},
 		},
 		{

@@ -144,20 +144,6 @@ func TestIsServiceNameCompatible(t *testing.T) {
 			expected:      false,
 		},
 
-		// Fluentbit Elastic tests
-		{
-			name:          "Fluentbit Elastic - api_url compatible",
-			serviceName:   "fluentbit_elastic",
-			attributeName: "api_url",
-			expected:      true,
-		},
-		{
-			name:          "Fluentbit Elastic - incompatible attribute",
-			serviceName:   "fluentbit_elastic",
-			attributeName: "api_key",
-			expected:      false,
-		},
-
 		// Google Cloud Identity tests
 		{
 			name:          "Google Cloud Identity - subject compatible",
@@ -358,7 +344,6 @@ func TestIsServiceNameCompatible_AllSupportedServices(t *testing.T) {
 		"bcm",
 		"bcm_connectivity",
 		"datadog",
-		"fluentbit_elastic",
 		"google_cloud_identity",
 		"nvault",
 		"okta",

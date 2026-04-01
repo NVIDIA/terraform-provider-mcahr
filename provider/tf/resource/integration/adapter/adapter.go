@@ -41,8 +41,6 @@ func GetIntegrationDataAdapter(serviceName string) adapterinterface.IntegrationD
 		return &integrations.BcmDataAdapter{}
 	case "bcm_connectivity":
 		return &integrations.BcmConnectivityDataAdapter{}
-	case "fluentbit_elastic":
-		return &integrations.FluentbitElasticDataAdapter{}
 	case "nvault":
 		return &integrations.NvaultDataAdapter{}
 	default:
