@@ -54,7 +54,6 @@ func (s *IntegrationSchema) GetSchema() schema.Schema {
 	addCustomSharedSchema(builder)
 
 	addAlertmanagerSchema(builder)
-	addDatadogSchema(builder)
 	addAzureActiveDirectorySchema(builder)
 	addOktaSchema(builder)
 	addGoogleCloudIdentitySchema(builder)
@@ -189,40 +188,6 @@ func addAlertmanagerSchema(builder *coreschema.SchemaBuilder) {
 		PlanModifiers: []planmodifier.List{
 			nulls.NullListIfUnknownModifier(),
 			defaults.EmptyStringListModifier(),
-		},
-	})
-}
-
-func addDatadogSchema(builder *coreschema.SchemaBuilder) {
-	// NOTE: api_key and api_url are defined in addCustomSharedSchema
-
-	builder.AddAttribute("site_url", schema.StringAttribute{
-		MarkdownDescription: "The site URL of the integration",
-		Optional:            true,
-		Computed:            true,
-		PlanModifiers: []planmodifier.String{
-			nulls.NullStringIfUnknownModifier(),
-			defaults.EmptyStringModifier(),
-		},
-	})
-
-	builder.AddAttribute("app_key", schema.StringAttribute{
-		MarkdownDescription: "The app key of the integration",
-		Optional:            true,
-		Computed:            true,
-		PlanModifiers: []planmodifier.String{
-			nulls.NullStringIfUnknownModifier(),
-			defaults.EmptyStringModifier(),
-		},
-	})
-
-	builder.AddAttribute("webhook_name", schema.StringAttribute{
-		MarkdownDescription: "The webhook name of the integration",
-		Optional:            true,
-		Computed:            true,
-		PlanModifiers: []planmodifier.String{
-			nulls.NullStringIfUnknownModifier(),
-			defaults.EmptyStringModifier(),
 		},
 	})
 }
@@ -377,9 +342,6 @@ func (s *IntegrationSchema) GetCompatibilityOptions() map[string]attribute.Compa
 		},
 		"credentials": {
 			MinVersion: "release-18.0.0",
-		},
-		"site_url": {
-			MinVersion: "release-19.0.0",
 		},
 		"idp_name": {
 			MinVersion: "release-22.0.0",

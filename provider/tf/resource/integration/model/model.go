@@ -46,11 +46,6 @@ type IntegrationTFModel struct {
 	ExternalUrl  types.String `tfsdk:"external_url" json:"external_url,omitempty"`
 	PayloadPaths types.List   `tfsdk:"payload_paths" json:"payload_paths,omitempty"`
 
-	// Datadog-specific fields
-	SiteUrl     types.String `tfsdk:"site_url" json:"site_url,omitempty"`
-	AppKey      types.String `tfsdk:"app_key" json:"app_key,omitempty"`
-	WebhookName types.String `tfsdk:"webhook_name" json:"webhook_name,omitempty"`
-
 	// Azure Active Directory-specific fields
 	TenantID     types.String `tfsdk:"tenant_id" json:"tenant_id,omitempty"`
 	ClientID     types.String `tfsdk:"client_id" json:"client_id,omitempty"`

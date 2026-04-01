@@ -44,22 +44,22 @@ func TestTFDataToMap(t *testing.T) {
 		validate    func(t *testing.T, result map[string]interface{})
 	}{
 		{
-			name: "Valid Datadog model",
+			name: "Valid Okta model",
 			tfModel: &integrationtf.IntegrationTFModel{
-				ServiceName: types.StringValue("datadog"),
-				APIKey:      types.StringValue("dd-api-key"),
-				APIUrl:      types.StringValue("https://api.datadoghq.com"),
-				SiteUrl:     types.StringValue("https://app.datadoghq.com"),
-				AppKey:      types.StringValue("dd-app-key"),
-				WebhookName: types.StringValue("my-webhook"),
+				ServiceName:  types.StringValue("okta"),
+				APIKey:       types.StringValue("okta-token"),
+				APIUrl:       types.StringValue("https://company.okta.com"),
+				IDPName:      types.StringValue("okta-idp"),
+				CacheTTLMs:   types.Int64Value(300000),
+				APIRateLimit: types.Int64Value(60),
 			},
 			expectError: false,
 			validate: func(t *testing.T, result map[string]interface{}) {
-				assert.Equal(t, "dd-api-key", result["api_key"])
-				assert.Equal(t, "https://api.datadoghq.com", result["api_url"])
-				assert.Equal(t, "https://app.datadoghq.com", result["site_url"])
-				assert.Equal(t, "dd-app-key", result["app_key"])
-				assert.Equal(t, "my-webhook", result["webhook_name"])
+				assert.Equal(t, "okta-token", result["api_token"])
+				assert.Equal(t, "https://company.okta.com", result["url"])
+				assert.Equal(t, "okta-idp", result["idp_name"])
+				assert.Equal(t, int64(300000), result["cache_ttl_ms"])
+				assert.Equal(t, int64(60), result["api_rate_limit"])
 			},
 		},
 		{
@@ -157,22 +157,22 @@ func TestMapToTFData(t *testing.T) {
 		validate        func(t *testing.T, tfModel *integrationtf.IntegrationTFModel)
 	}{
 		{
-			name: "Valid Datadog data",
+			name: "Valid Okta data",
 			integrationData: map[string]interface{}{
-				"api_key":      "dd-key-123",
-				"api_url":      "https://api.datadoghq.eu",
-				"site_url":     "https://app.datadoghq.eu",
-				"app_key":      "dd-app-456",
-				"webhook_name": "test-webhook",
+				"api_token":      "okta-token-123",
+				"url":            "https://company.okta.com",
+				"idp_name":       "okta-idp",
+				"cache_ttl_ms":   300000,
+				"api_rate_limit": 60,
 			},
-			serviceName: "datadog",
+			serviceName: "okta",
 			expectError: false,
 			validate: func(t *testing.T, tfModel *integrationtf.IntegrationTFModel) {
-				assert.Equal(t, "dd-key-123", tfModel.APIKey.ValueString())
-				assert.Equal(t, "https://api.datadoghq.eu", tfModel.APIUrl.ValueString())
-				assert.Equal(t, "https://app.datadoghq.eu", tfModel.SiteUrl.ValueString())
-				assert.Equal(t, "dd-app-456", tfModel.AppKey.ValueString())
-				assert.Equal(t, "test-webhook", tfModel.WebhookName.ValueString())
+				assert.Equal(t, "okta-token-123", tfModel.APIKey.ValueString())
+				assert.Equal(t, "https://company.okta.com", tfModel.APIUrl.ValueString())
+				assert.Equal(t, "okta-idp", tfModel.IDPName.ValueString())
+				assert.Equal(t, int64(300000), tfModel.CacheTTLMs.ValueInt64())
+				assert.Equal(t, int64(60), tfModel.APIRateLimit.ValueInt64())
 			},
 		},
 		{
@@ -362,19 +362,19 @@ func TestJSONToTFData(t *testing.T) {
 		{
 			name:            "Invalid JSON",
 			integrationData: `{invalid json}`,
-			serviceName:     "datadog",
+			serviceName:     "okta",
 			expectError:     true,
 		},
 		{
 			name:            "Empty JSON",
 			integrationData: "",
-			serviceName:     "datadog",
+			serviceName:     "okta",
 			expectError:     true,
 		},
 		{
 			name:            "Null JSON",
 			integrationData: "null",
-			serviceName:     "datadog",
+			serviceName:     "okta",
 			expectError:     false, // null JSON is valid, should result in empty data
 			validate: func(t *testing.T, tfModel *integrationtf.IntegrationTFModel) {
 				// Should have empty/default values since JSON was null

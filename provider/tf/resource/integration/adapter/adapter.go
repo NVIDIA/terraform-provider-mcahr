@@ -29,8 +29,6 @@ func GetIntegrationDataAdapter(serviceName string) adapterinterface.IntegrationD
 	switch serviceName {
 	case "alertmanager":
 		return &integrations.AlertmanagerDataAdapter{}
-	case "datadog":
-		return &integrations.DatadogDataAdapter{}
 	case "azure_active_directory":
 		return &integrations.AzureActiveDirectoryDataAdapter{}
 	case "okta":

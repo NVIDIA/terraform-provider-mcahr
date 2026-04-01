@@ -55,7 +55,7 @@ func TestBotTranslatorCommon_ToAPIModel(t *testing.T) {
 				AlarmResourceQuery:     types.StringValue("host"),
 				CommunicationWorkspace: types.StringValue("ops-workspace"),
 				CommunicationChannel:   types.StringValue("alerts-channel"),
-				IntegrationName:        types.StringValue("datadog"),
+				IntegrationName:        types.StringValue("alertmanager"),
 			}
 			requestContext := common.NewRequestContext(context.Background()).WithOperation(tt.operation).WithAPIVersion(common.V1)
 			translationData := &coretranslator.TranslationData{}
@@ -81,7 +81,7 @@ func TestBotTranslatorCommon_ToAPIModel(t *testing.T) {
 					"alarm_resource_query=\"host\", " +
 					"communication_workspace=\"ops-workspace\", " +
 					"communication_channel=\"alerts-channel\", " +
-					"integration_name=\"datadog\")"
+					"integration_name=\"alertmanager\")"
 				assert.Equal(t, expected, result.Statement)
 			case common.Update:
 				expected := "update_bot(" +
@@ -96,7 +96,7 @@ func TestBotTranslatorCommon_ToAPIModel(t *testing.T) {
 					"alarm_resource_query=\"host\", " +
 					"communication_workspace=\"ops-workspace\", " +
 					"communication_channel=\"alerts-channel\", " +
-					"integration_name=\"datadog\")"
+					"integration_name=\"alertmanager\")"
 				assert.Equal(t, expected, result.Statement)
 			case common.Read:
 				assert.Equal(t, "get_bot_class(bot_name=\"test_bot\")", result.Statement)

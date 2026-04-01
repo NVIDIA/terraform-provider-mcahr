@@ -28,7 +28,6 @@ Integration resource for configuring integrations with external services
 - `api_key` (String) The API key of the integration
 - `api_rate_limit` (Number) The API rate limit of the integration
 - `api_url` (String) The API URL of the integration
-- `app_key` (String) The app key of the integration
 - `cache_ttl` (Number, Deprecated) **Deprecated** Use `cache_ttl_ms` instead.
 - `cache_ttl_ms` (Number) The cache TTL of the integration in milliseconds
 - `client_id` (String) The client ID of the integration
@@ -42,7 +41,5 @@ Integration resource for configuring integrations with external services
 - `payload_paths` (List of String) The payload paths of the integration
 - `permissions_user` (String) The permissions user of the integration
 - `role_name` (String) The role name of the integration
-- `site_url` (String) The site URL of the integration
 - `subject` (String) The subject of the integration
 - `tenant_id` (String) The tenant ID of the integration
-- `webhook_name` (String) The webhook name of the integration

@@ -152,11 +152,11 @@ func TestIntegrationTranslatorV1_ToTFModel(t *testing.T) {
 					IntegrationClasses: []integrationapi.IntegrationClassV1{
 						{
 							Name:            "deleted-integration",
-							ServiceName:     "datadog",
+							ServiceName:     "okta",
 							SerialNumber:    "DEL001",
 							Enabled:         false,
 							PermissionsUser: "deleted@company.com",
-							Params:          `{"api_key":"deleted-key","api_url":"https://deleted.datadoghq.com"}`,
+							Params:          `{"api_token":"deleted-token","url":"https://deleted.okta.com"}`,
 						},
 					},
 				},
@@ -165,7 +165,7 @@ func TestIntegrationTranslatorV1_ToTFModel(t *testing.T) {
 			expectNil:   false,
 			validate: func(t *testing.T, tfModel *integrationtf.IntegrationTFModel) {
 				assert.Equal(t, "deleted-integration", tfModel.Name.ValueString())
-				assert.Equal(t, "datadog", tfModel.ServiceName.ValueString())
+				assert.Equal(t, "okta", tfModel.ServiceName.ValueString())
 				assert.Equal(t, "DEL001", tfModel.SerialNumber.ValueString())
 				assert.False(t, tfModel.Enabled.ValueBool())
 				assert.Equal(t, "deleted@company.com", tfModel.PermissionsUser.ValueString())
@@ -358,7 +358,7 @@ func TestIntegrationTranslatorV1_EdgeCases(t *testing.T) {
 				IntegrationClasses: []integrationapi.IntegrationClassV1{
 					{
 						Name:            "null-params",
-						ServiceName:     "datadog",
+						ServiceName:     "okta",
 						SerialNumber:    "NULL001",
 						Enabled:         true,
 						PermissionsUser: "null@company.com",
@@ -377,7 +377,7 @@ func TestIntegrationTranslatorV1_EdgeCases(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, result)
 		assert.Equal(t, "null-params", result.Name.ValueString())
-		assert.Equal(t, "datadog", result.ServiceName.ValueString())
+		assert.Equal(t, "okta", result.ServiceName.ValueString())
 		// Integration fields should have default values
 		assert.Equal(t, "", result.APIKey.ValueString())
 	})

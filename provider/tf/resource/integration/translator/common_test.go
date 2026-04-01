@@ -46,19 +46,19 @@ func TestIntegrationTranslatorCommon_ToAPIModelWithVersion(t *testing.T) {
 		{
 			name: "Create operation with V2 backend",
 			tfModel: &integrationtf.IntegrationTFModel{
-				Name:            types.StringValue("test-datadog-integration"),
-				ServiceName:     types.StringValue("datadog"),
+				Name:            types.StringValue("test-okta-integration"),
+				ServiceName:     types.StringValue("okta"),
 				SerialNumber:    types.StringValue("SN123456"),
 				Enabled:         types.BoolValue(true),
 				PermissionsUser: types.StringValue("admin@example.com"),
-				APIKey:          types.StringValue("dd-api-key"),
-				APIUrl:          types.StringValue("https://api.datadoghq.com"),
+				APIKey:          types.StringValue("okta-api-key"),
+				APIUrl:          types.StringValue("https://company.okta.com"),
 			},
 			operation:      common.Create,
 			backendVersion: common.V2,
 			expectError:    false,
 			validateResult: func(t *testing.T, apiModel *statement.StatementInputAPIModel) {
-				expected := `define_integration(integration_name="test-datadog-integration", serial_number="SN123456", enabled=true, permissions_user="admin@example.com", params={"api_key":"dd-api-key","api_url":"https://api.datadoghq.com","app_key":"","site_url":"","webhook_name":""}, service_name="datadog")`
+				expected := `define_integration(integration_name="test-okta-integration", serial_number="SN123456", enabled=true, permissions_user="admin@example.com", params={"api_rate_limit":0,"api_token":"okta-api-key","cache_ttl_ms":0,"idp_name":"","url":"https://company.okta.com"}, service_name="okta")`
 				assert.Equal(t, expected, apiModel.Statement)
 				assert.Equal(t, common.V2, apiModel.APIVersion)
 			},
@@ -451,7 +451,7 @@ func TestIntegrationTranslatorCommon_BuildIntegrationStatement(t *testing.T) {
 			statementName: "custom_integration_operation",
 			tfModel: &integrationtf.IntegrationTFModel{
 				Name:            types.StringValue("custom-test"),
-				ServiceName:     types.StringValue("datadog"),
+				ServiceName:     types.StringValue("okta"),
 				SerialNumber:    types.StringValue("CUSTOM001"),
 				Enabled:         types.BoolValue(true),
 				PermissionsUser: types.StringValue("custom@company.com"),
@@ -459,7 +459,7 @@ func TestIntegrationTranslatorCommon_BuildIntegrationStatement(t *testing.T) {
 			},
 			expectError: false,
 			validate: func(t *testing.T, statement string) {
-				expected := `custom_integration_operation(integration_name="custom-test", serial_number="CUSTOM001", enabled=true, permissions_user="custom@company.com", params={"api_key":"custom-key","api_url":"","app_key":"","site_url":"","webhook_name":""})`
+				expected := `custom_integration_operation(integration_name="custom-test", serial_number="CUSTOM001", enabled=true, permissions_user="custom@company.com", params={"api_rate_limit":0,"api_token":"custom-key","cache_ttl_ms":0,"idp_name":"","url":""})`
 				assert.Equal(t, expected, statement)
 			},
 		},

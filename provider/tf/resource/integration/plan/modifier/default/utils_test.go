@@ -124,26 +124,6 @@ func TestIsServiceNameCompatible(t *testing.T) {
 			expected:      false,
 		},
 
-		// Datadog tests
-		{
-			name:          "Datadog - api_key compatible",
-			serviceName:   "datadog",
-			attributeName: "api_key",
-			expected:      true,
-		},
-		{
-			name:          "Datadog - webhook_name compatible",
-			serviceName:   "datadog",
-			attributeName: "webhook_name",
-			expected:      true,
-		},
-		{
-			name:          "Datadog - incompatible attribute",
-			serviceName:   "datadog",
-			attributeName: "tenant_id",
-			expected:      false,
-		},
-
 		// Google Cloud Identity tests
 		{
 			name:          "Google Cloud Identity - subject compatible",
@@ -233,19 +213,19 @@ func TestIsServiceNameCompatible(t *testing.T) {
 		// Edge cases
 		{
 			name:          "Empty attribute name",
-			serviceName:   "datadog",
+			serviceName:   "okta",
 			attributeName: "",
 			expected:      false,
 		},
 		{
 			name:          "Case sensitivity test - uppercase service",
-			serviceName:   "DATADOG",
+			serviceName:   "OKTA",
 			attributeName: "api_key",
 			expected:      false, // Service names should be lowercase
 		},
 		{
 			name:          "Case sensitivity test - uppercase attribute",
-			serviceName:   "datadog",
+			serviceName:   "okta",
 			attributeName: "API_KEY",
 			expected:      false, // Attribute names should be lowercase
 		},
@@ -280,8 +260,8 @@ func TestGetAttributeName(t *testing.T) {
 		},
 		{
 			name:     "Deeply nested attribute path",
-			path:     path.Root("config").AtName("integration").AtName("datadog").AtName("webhook_name"),
-			expected: "webhook_name",
+			path:     path.Root("config").AtName("integration").AtName("okta").AtName("idp_name"),
+			expected: "idp_name",
 		},
 		{
 			name:     "Path with list element",
@@ -343,7 +323,6 @@ func TestIsServiceNameCompatible_AllSupportedServices(t *testing.T) {
 		"azure_active_directory",
 		"bcm",
 		"bcm_connectivity",
-		"datadog",
 		"google_cloud_identity",
 		"nvault",
 		"okta",
@@ -359,7 +338,7 @@ func TestIsServiceNameCompatible_AllSupportedServices(t *testing.T) {
 			testAttributes := []string{
 				"api_key", "api_url", "idp_name", "cache_ttl_ms", "api_rate_limit",
 				"external_url", "payload_paths", "tenant_id", "client_id", "client_secret",
-				"site_url", "app_key", "webhook_name", "api_certificate", "subject",
+				"api_certificate", "subject",
 				"credentials", "address", "namespace", "role_name", "jwt_auth_path",
 			}
 

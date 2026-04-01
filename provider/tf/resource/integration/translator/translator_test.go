@@ -59,23 +59,23 @@ func TestIntegrationTranslator_ToTFModel(t *testing.T) {
 			expectError: true,
 		},
 		{
-			name: "Valid Datadog integration",
+			name: "Valid Okta integration",
 			apiModel: &integrationapi.IntegrationResponseAPIModel{
 				Output: integrationapi.IntegrationOutput{
 					Integrations: integrationapi.IntegrationConfigurations{
 						Items: []integrationapi.IntegrationItem{
 							{
-								Name:            "datadog-prod",
+								Name:            "okta-prod",
 								Enabled:         true,
-								SerialNumber:    "DD001",
-								PermissionsUser: "datadog@company.com",
-								IntegrationType: "DATADOG",
+								SerialNumber:    "OKTA001",
+								PermissionsUser: "okta@company.com",
+								IntegrationType: "OKTA",
 								IntegrationData: map[string]interface{}{
-									"api_key":      "dd-api-key-123",
-									"api_url":      "https://api.datadoghq.com",
-									"site_url":     "https://app.datadoghq.com",
-									"app_key":      "dd-app-key-456",
-									"webhook_name": "prod-webhook",
+									"idp_name":       "okta-idp",
+									"cache_ttl_ms":   300000,
+									"api_rate_limit": 50,
+									"api_token":      "okta-api-token-123",
+									"url":            "https://company.okta.com",
 								},
 							},
 						},
@@ -85,20 +85,20 @@ func TestIntegrationTranslator_ToTFModel(t *testing.T) {
 			expectError: false,
 			expectNil:   false,
 			validate: func(t *testing.T, tfModel *integrationtf.IntegrationTFModel) {
-				assert.Equal(t, "datadog-prod", tfModel.Name.ValueString())
-				assert.Equal(t, "datadog", tfModel.ServiceName.ValueString()) // Should be lowercase
-				assert.Equal(t, "DD001", tfModel.SerialNumber.ValueString())
+				assert.Equal(t, "okta-prod", tfModel.Name.ValueString())
+				assert.Equal(t, "okta", tfModel.ServiceName.ValueString()) // Should be lowercase
+				assert.Equal(t, "OKTA001", tfModel.SerialNumber.ValueString())
 				assert.True(t, tfModel.Enabled.ValueBool())
-				assert.Equal(t, "datadog@company.com", tfModel.PermissionsUser.ValueString())
+				assert.Equal(t, "okta@company.com", tfModel.PermissionsUser.ValueString())
 
-				// Check integration-specific fields
-				assert.Equal(t, "dd-api-key-123", tfModel.APIKey.ValueString())
-				assert.Equal(t, "https://api.datadoghq.com", tfModel.APIUrl.ValueString())
-				assert.Equal(t, "https://app.datadoghq.com", tfModel.SiteUrl.ValueString())
-				assert.Equal(t, "dd-app-key-456", tfModel.AppKey.ValueString())
-				assert.Equal(t, "prod-webhook", tfModel.WebhookName.ValueString())
+				// Check Okta-specific fields
+				assert.Equal(t, "okta-idp", tfModel.IDPName.ValueString())
+				assert.Equal(t, int64(300000), tfModel.CacheTTLMs.ValueInt64())
+				assert.Equal(t, int64(50), tfModel.APIRateLimit.ValueInt64())
+				assert.Equal(t, "okta-api-token-123", tfModel.APIKey.ValueString())
+				assert.Equal(t, "https://company.okta.com", tfModel.APIUrl.ValueString())
 
-				// PayloadPaths should be null since it's not set for Datadog
+				// PayloadPaths should be null since it's not set for Okta
 				assert.True(t, tfModel.PayloadPaths.IsNull())
 			},
 		},
@@ -334,7 +334,7 @@ func TestIntegrationTranslator_EdgeCases(t *testing.T) {
 							Enabled:         true,
 							SerialNumber:    "EMPTY001",
 							PermissionsUser: "empty@company.com",
-							IntegrationType: "DATADOG",
+							IntegrationType: "ALERTMANAGER",
 							IntegrationData: map[string]interface{}{}, // Empty data
 						},
 					},
@@ -351,10 +351,9 @@ func TestIntegrationTranslator_EdgeCases(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, result)
 		assert.Equal(t, "empty-data-integration", result.Name.ValueString())
-		assert.Equal(t, "datadog", result.ServiceName.ValueString())
+		assert.Equal(t, "alertmanager", result.ServiceName.ValueString())
 		// Integration-specific fields should have default/empty values
-		assert.Equal(t, "", result.APIKey.ValueString())
-		assert.Equal(t, "", result.APIUrl.ValueString())
+		assert.Equal(t, "", result.ExternalUrl.ValueString())
 	})
 
 	t.Run("Null values in TF model", func(t *testing.T) {

@@ -50,10 +50,10 @@ func createFullBotResponseV1() *botapi.BotResponseAPIModelV1 {
 					ActionStatement:    "restart_service",
 					EventType:          "trigger_source",
 					TriggerSource:      "trigger_source",
-					MonitorID:          "monitor_456",
-					ExternalTriggerID:  "monitor_456",
+					MonitorID:          "alert_group_456",
+					ExternalTriggerID:  "alert_group_456",
 					AlarmResourceQuery: "host",
-					IntegrationName:    "datadog",
+					IntegrationName:    "alertmanager",
 				},
 			},
 		},
@@ -110,9 +110,9 @@ func TestBotTranslatorV1_ToTFModel_Success(t *testing.T) {
 	assert.Equal(t, "ops-workspace", result.CommunicationWorkspace.ValueString())
 	assert.Equal(t, "alerts-channel", result.CommunicationChannel.ValueString())
 	assert.Equal(t, "trigger_source", result.TriggerSource.ValueString())
-	assert.Equal(t, "monitor_456", result.TriggerID.ValueString())
+	assert.Equal(t, "alert_group_456", result.TriggerID.ValueString())
 	assert.Equal(t, "host", result.AlarmResourceQuery.ValueString())
-	assert.Equal(t, "datadog", result.IntegrationName.ValueString())
+	assert.Equal(t, "alertmanager", result.IntegrationName.ValueString())
 }
 
 func TestBotTranslatorV1_ToTFModel_EmptyOptionalFields(t *testing.T) {

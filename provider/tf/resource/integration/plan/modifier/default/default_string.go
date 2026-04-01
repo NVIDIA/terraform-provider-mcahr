@@ -36,7 +36,7 @@ func EmptyStringModifier() planmodifier.String {
 //	"api_url": schema.StringAttribute{
 //	    Optional: true,
 //	    PlanModifiers: []planmodifier.String{
-//	        defaults.DefaultStringModifier("https://api.datadoghq.com"), // Only for Datadog
+//	        defaults.DefaultStringModifier("https://example.com"),
 //	    },
 //	}
 func DefaultStringModifier(defaultValue string) planmodifier.String {
