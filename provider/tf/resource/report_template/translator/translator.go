@@ -25,6 +25,7 @@ import (
 	"terraform/terraform-provider/provider/external_api/resources/statement"
 	"terraform/terraform-provider/provider/tf/core/translator"
 	reporttemplatetf "terraform/terraform-provider/provider/tf/resource/report_template/model"
+	converters "terraform/terraform-provider/provider/tf/resource/report_template/translator/object_converters"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -51,20 +52,12 @@ func (t *ReportTemplateTranslator) ToTFModel(requestContext *common.RequestConte
 	config := configItem.Config
 	metadata := configItem.EntityMetadata
 
-	blocksJSON, err := json.Marshal(config.Blocks)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal V2 blocks: %w", err)
+	tfModel := &reporttemplatetf.ReportTemplateTFModel{
+		Name: types.StringValue(metadata.Name),
 	}
 
-	blocksValue := types.StringValue(string(blocksJSON))
-	linksValue := t.convertLinksToTFValue(config.Links)
-
-	tfModel := &reporttemplatetf.ReportTemplateTFModel{
-		Name:       types.StringValue(metadata.Name),
-		Blocks:     blocksValue,
-		BlocksFull: blocksValue,
-		Links:      linksValue,
-		LinksFull:  linksValue,
+	if err := toTFModelJsonFields(tfModel, config.Blocks, config.Links); err != nil {
+		return nil, err
 	}
 
 	return tfModel, nil
@@ -75,17 +68,41 @@ func (t *ReportTemplateTranslator) ToAPIModel(requestContext *common.RequestCont
 	return t.ToAPIModelWithVersion(requestContext, translationData, tfModel)
 }
 
-// convertLinksToTFValue converts V2 links to TF value, using empty JSON array as default
-func (t *ReportTemplateTranslator) convertLinksToTFValue(links []customattribute.LinkJson) types.String {
-	// If links is empty, return empty JSON array (matches schema default)
-	if len(links) == 0 {
-		return types.StringValue("[]")
-	}
-
-	jsonBytes, err := json.Marshal(links)
+// toTFModelJsonFields populates JSON and list fields on the TF model from parsed API structs.
+// Called by both V1 and V2 translators.
+func toTFModelJsonFields(tfModel *reporttemplatetf.ReportTemplateTFModel, blocks []customattribute.BlockJson, links []customattribute.LinkJson) error {
+	// Blocks
+	blocksJSON, err := json.Marshal(blocks)
 	if err != nil {
-		return types.StringValue("[]")
+		return fmt.Errorf("failed to marshal blocks: %w", err)
 	}
+	blocksValue := types.StringValue(string(blocksJSON))
+	tfModel.Blocks = blocksValue
+	tfModel.BlocksFull = blocksValue
 
-	return types.StringValue(string(jsonBytes))
+	blocksList, bDiags := converters.BlocksListFromAPI(blocks)
+	if bDiags.HasError() {
+		return fmt.Errorf("failed to convert blocks to blocks_list: %s", bDiags.Errors())
+	}
+	tfModel.BlocksList = blocksList
+
+	// Links
+	linksJSON, err := json.Marshal(links)
+	if err != nil {
+		return fmt.Errorf("failed to marshal links: %w", err)
+	}
+	linksValue := types.StringValue(string(linksJSON))
+	if len(links) == 0 {
+		linksValue = types.StringValue("[]")
+	}
+	tfModel.Links = linksValue
+	tfModel.LinksFull = linksValue
+
+	linksList, lDiags := converters.LinksListFromAPI(links)
+	if lDiags.HasError() {
+		return fmt.Errorf("failed to convert links to links_list: %s", lDiags.Errors())
+	}
+	tfModel.LinksList = linksList
+
+	return nil
 }

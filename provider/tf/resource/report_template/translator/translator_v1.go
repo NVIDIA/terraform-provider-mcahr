@@ -16,6 +16,7 @@
 package translator
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"terraform/terraform-provider/provider/common"
@@ -53,9 +54,7 @@ func (t *ReportTemplateTranslatorV1) ToTFModel(requestContext *common.RequestCon
 
 	// Get the first report template class, current implementation only supports one report template to be returned by the API
 	reportTemplateClass := container.ReportTemplateClasses[0]
-	jsonConfig := common.JsonConfig{
-		BackendVersion: requestContext.BackendVersion,
-	}
+	jsonConfig := common.JsonConfig{BackendVersion: requestContext.BackendVersion}
 
 	blocksJson, err := common.RemarshalListWithConfig[*customattribute.BlockJson](reportTemplateClass.Blocks, jsonConfig)
 	if err != nil {
@@ -67,12 +66,22 @@ func (t *ReportTemplateTranslatorV1) ToTFModel(requestContext *common.RequestCon
 		return nil, err
 	}
 
+	var blocks []customattribute.BlockJson
+	if err := json.Unmarshal([]byte(blocksJson), &blocks); err != nil {
+		return nil, fmt.Errorf("failed to parse remarshaled blocks: %w", err)
+	}
+
+	var links []customattribute.LinkJson
+	if err := json.Unmarshal([]byte(linksJson), &links); err != nil {
+		return nil, fmt.Errorf("failed to parse remarshaled links: %w", err)
+	}
+
 	tfModel := &reporttemplatetf.ReportTemplateTFModel{
-		Name:       types.StringValue(reportTemplateClass.Name),
-		Blocks:     types.StringValue(blocksJson),
-		BlocksFull: types.StringValue(blocksJson),
-		Links:      types.StringValue(linksJson),
-		LinksFull:  types.StringValue(linksJson),
+		Name: types.StringValue(reportTemplateClass.Name),
+	}
+
+	if err := toTFModelJsonFields(tfModel, blocks, links); err != nil {
+		return nil, err
 	}
 
 	return tfModel, nil

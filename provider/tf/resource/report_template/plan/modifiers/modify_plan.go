@@ -35,16 +35,18 @@ func ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resou
 		return
 	}
 
-	// Start with config values (equivalent to runbook's data modifier step, but without data field logic)
 	// Make a shallow copy to avoid modifying the original config
 	resultValuesCopy := configValues
 	resultValues = &resultValuesCopy
 
-	// Apply defaults from plan (important for fields with schema defaults like links)
+	// Apply defaults from plan (important for fields with schema defaults)
 	plan.AddDefaultsFromPlan(resultValues, &planValues)
 
-	// Populate the full JSON attributes with normalized values and defaults
-	err = jsonmodifier.PopulateFullJsonAttributes(ctx, resultValues, &planValues, &stateValues, backendVersion)
+	// Populate the full JSON attributes with normalized values and defaults.
+	// Deprecated JSON fields with active replacements (e.g. blocks when blocks_list is set)
+	// are automatically skipped and nulled inside PopulateFullJsonAttributes.
+	// configValues (pre-defaults) is passed to distinguish user-set fields from plan defaults.
+	err = jsonmodifier.PopulateFullJsonAttributes(ctx, resultValues, &configValues, &planValues, &stateValues, backendVersion)
 	if err != nil {
 		resp.Diagnostics.AddError("Error populating full JSON attributes", err.Error())
 		return

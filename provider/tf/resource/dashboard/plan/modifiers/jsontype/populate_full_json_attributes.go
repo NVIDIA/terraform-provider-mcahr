@@ -81,6 +81,9 @@ func PopulateFullJsonAttributes(ctx context.Context, resultValues, resultValuesW
 
 		configValue := attrConfig.GetAttr(resultValues)
 
+		// Remarshal the json field to apply the custom struct tags (like min_version, max_version, etc.)
+		// and set the default values for the fields that are not present in the JSON
+		// See customattribute structs for more details
 		normalizedValue, err := attrConfig.RemarshalFunc(configValue.ValueString(), common.JsonConfig{BackendVersion: backendVersion})
 		if err != nil {
 			return fmt.Errorf("error populating full JSON attributes: %s", err.Error())
@@ -92,6 +95,9 @@ func PopulateFullJsonAttributes(ctx context.Context, resultValues, resultValuesW
 	return nil
 }
 
+// shouldSkipForReplacement checks if a deprecated JSON attribute should be skipped because its
+// replacement field is active. When skipping, nulls the base and _full fields in both
+// resultValues and planValues (plan needs _full nulled so isDeleteOperation works on next call).
 func shouldSkipForReplacement(attrConfig JsonAttributeConfig, resultValues, resultValuesWithoutDefaults, plan *model.DashboardTFModel) bool {
 	if attrConfig.GetReplacementAttr == nil {
 		return false
@@ -113,6 +119,7 @@ func shouldSkipForReplacement(attrConfig JsonAttributeConfig, resultValues, resu
 func isDeleteOperation(plan *model.DashboardTFModel, attrConfig JsonAttributeConfig) bool {
 	fullPlanValue := attrConfig.GetFullAttr(plan)
 	if fullPlanValue.IsNull() {
+		// It's a delete operation, do nothing.
 		return true
 	}
 	return false

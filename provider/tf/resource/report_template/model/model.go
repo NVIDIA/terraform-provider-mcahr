@@ -28,8 +28,10 @@ type ReportTemplateTFModel struct {
 	Name       types.String `tfsdk:"name"`
 	Blocks     types.String `tfsdk:"blocks"`
 	BlocksFull types.String `tfsdk:"blocks_full"`
+	BlocksList types.List   `tfsdk:"blocks_list"`
 	Links      types.String `tfsdk:"links"`
 	LinksFull  types.String `tfsdk:"links_full"`
+	LinksList  types.List   `tfsdk:"links_list"`
 }
 
 // GetName returns the name of the report template resource

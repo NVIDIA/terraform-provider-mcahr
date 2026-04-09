@@ -17,6 +17,7 @@ package translator
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 
 	"terraform/terraform-provider/provider/common"
@@ -24,6 +25,7 @@ import (
 	"terraform/terraform-provider/provider/tf/core/translator"
 	utils "terraform/terraform-provider/provider/tf/core/translator"
 	reporttemplatetf "terraform/terraform-provider/provider/tf/resource/report_template/model"
+	converters "terraform/terraform-provider/provider/tf/resource/report_template/translator/object_converters"
 )
 
 // ReportTemplateTranslatorCommon contains shared logic for report template translators
@@ -77,10 +79,39 @@ func (t *ReportTemplateTranslatorCommon) buildReportTemplateStatement(requestCon
 	builder := utils.NewStatementBuilder(statementName, requestContext.BackendVersion, translationData.CompatibilityOptions).
 		SetStringField("report_template_name", tfModel.Name.ValueString(), "name")
 
-	builder = builder.SetField("blocks", t.encodeBase64(tfModel.BlocksFull.ValueString()), "blocks")
-	builder = builder.SetField("links", t.encodeBase64(tfModel.LinksFull.ValueString()), "links")
+	blocksJSON := buildBlocksJSON(requestContext, tfModel)
+	linksJSON := buildLinksJSON(requestContext, tfModel)
+
+	builder = builder.SetField("blocks", t.encodeBase64(blocksJSON), "blocks")
+	builder = builder.SetField("links", t.encodeBase64(linksJSON), "links")
 
 	return builder.Build()
+}
+
+func buildBlocksJSON(requestContext *common.RequestContext, tfModel *reporttemplatetf.ReportTemplateTFModel) string {
+	if common.IsAttrKnown(tfModel.BlocksList) {
+		blocks, err := converters.BlocksListToInternal(requestContext.Context, tfModel.BlocksList)
+		if err == nil {
+			b, err := json.Marshal(blocks)
+			if err == nil {
+				return string(b)
+			}
+		}
+	}
+	return tfModel.BlocksFull.ValueString()
+}
+
+func buildLinksJSON(requestContext *common.RequestContext, tfModel *reporttemplatetf.ReportTemplateTFModel) string {
+	if common.IsAttrKnown(tfModel.LinksList) {
+		links, err := converters.LinksListToInternal(requestContext.Context, tfModel.LinksList)
+		if err == nil {
+			b, err := json.Marshal(links)
+			if err == nil {
+				return string(b)
+			}
+		}
+	}
+	return tfModel.LinksFull.ValueString()
 }
 
 // encodeBase64 encodes the JSON string to base64 with quotes

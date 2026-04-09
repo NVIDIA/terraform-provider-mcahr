@@ -25,6 +25,7 @@ import (
 	customattribute "terraform/terraform-provider/provider/external_api/resources/report_templates/custom_attribute"
 	coretranslator "terraform/terraform-provider/provider/tf/core/translator"
 
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -66,6 +67,25 @@ func TestReportTemplateTranslator_ToTFModel_Success(t *testing.T) {
 		`"report_template_name":"other_template"` +
 		`}]`
 	assert.Equal(t, expectedLinksJSON, result.Links.ValueString())
+
+	// Verify blocks_list populated
+	assert.False(t, result.BlocksList.IsNull())
+	require.Equal(t, 1, len(result.BlocksList.Elements()))
+	blockObj := result.BlocksList.Elements()[0].(types.Object)
+	assert.Equal(t, "Block Name", blockObj.Attributes()["title"].(types.String).ValueString())
+	assert.Equal(t, "host", blockObj.Attributes()["resource_query"].(types.String).ValueString())
+	assert.Equal(t, "environment", blockObj.Attributes()["group_by_tag"].(types.String).ValueString())
+	assert.Equal(t, "service", blockObj.Attributes()["breakdown_by_tag"].(types.String).ValueString())
+	assert.Equal(t, "COUNT", blockObj.Attributes()["view_mode"].(types.String).ValueString())
+	assert.Equal(t, true, blockObj.Attributes()["include_resources_without_group_tag"].(types.Bool).ValueBool())
+	assert.Equal(t, false, blockObj.Attributes()["include_other_breakdown_tag_values"].(types.Bool).ValueBool())
+
+	// Verify links_list populated
+	assert.False(t, result.LinksList.IsNull())
+	require.Equal(t, 1, len(result.LinksList.Elements()))
+	linkObj := result.LinksList.Elements()[0].(types.Object)
+	assert.Equal(t, "test", linkObj.Attributes()["label"].(types.String).ValueString())
+	assert.Equal(t, "other_template", linkObj.Attributes()["report_template_name"].(types.String).ValueString())
 }
 
 func TestReportTemplateTranslator_ToTFModel_MinimalData(t *testing.T) {
@@ -100,6 +120,18 @@ func TestReportTemplateTranslator_ToTFModel_MinimalData(t *testing.T) {
 		`}]`
 	assert.Equal(t, expectedMinimalBlocksJSON, result.Blocks.ValueString())
 	assert.Equal(t, "[]", result.Links.ValueString())
+
+	// Verify blocks_list populated (minimal has 1 block)
+	assert.False(t, result.BlocksList.IsNull())
+	require.Equal(t, 1, len(result.BlocksList.Elements()))
+	minBlockObj := result.BlocksList.Elements()[0].(types.Object)
+	assert.Equal(t, "Minimal Block", minBlockObj.Attributes()["title"].(types.String).ValueString())
+	assert.Equal(t, "host", minBlockObj.Attributes()["resource_query"].(types.String).ValueString())
+	assert.Equal(t, "", minBlockObj.Attributes()["view_mode"].(types.String).ValueString())
+
+	// Verify links_list empty (not null)
+	assert.False(t, result.LinksList.IsNull())
+	assert.Empty(t, result.LinksList.Elements())
 }
 
 func TestReportTemplateTranslator_ToTFModel_NilModel(t *testing.T) {
@@ -141,7 +173,7 @@ func TestReportTemplateTranslator_ToTFModel_NoConfigurations(t *testing.T) {
 	// then
 	require.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "no report template configurations found")
+	assert.EqualError(t, err, "no report template configurations found in V2 API response")
 }
 
 func TestReportTemplateTranslator_GetErrors_WithErrors(t *testing.T) {

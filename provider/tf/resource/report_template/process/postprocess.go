@@ -23,6 +23,7 @@ import (
 	corecommon "terraform/terraform-provider/provider/tf/core/common"
 	"terraform/terraform-provider/provider/tf/core/process"
 	reporttemplatetf "terraform/terraform-provider/provider/tf/resource/report_template/model"
+	converters "terraform/terraform-provider/provider/tf/resource/report_template/translator/object_converters"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -32,8 +33,7 @@ type ReportTemplatePostProcessor struct{}
 var _ process.PostProcessor[*reporttemplatetf.ReportTemplateTFModel] = &ReportTemplatePostProcessor{}
 
 func (p *ReportTemplatePostProcessor) PostProcessCreate(requestContext *common.RequestContext, data *process.ProcessData, tfModel *reporttemplatetf.ReportTemplateTFModel) error {
-	// No post-processing needed for create - orchestrator's RestoreAllFieldsFromPlan handles restoration
-	return nil
+	return restoreFieldsFromPlan(requestContext, data.CreateRequest.Plan, tfModel)
 }
 
 func (p *ReportTemplatePostProcessor) PostProcessRead(requestContext *common.RequestContext, data *process.ProcessData, tfModel *reporttemplatetf.ReportTemplateTFModel) error {
@@ -49,12 +49,28 @@ func (p *ReportTemplatePostProcessor) PostProcessRead(requestContext *common.Req
 }
 
 func (p *ReportTemplatePostProcessor) PostProcessUpdate(requestContext *common.RequestContext, data *process.ProcessData, tfModel *reporttemplatetf.ReportTemplateTFModel) error {
-	// No post-processing needed for update - orchestrator's RestoreAllFieldsFromPlan handles restoration
-	return nil
+	return restoreFieldsFromPlan(requestContext, data.UpdateRequest.Plan, tfModel)
 }
 
 func (p *ReportTemplatePostProcessor) PostProcessDelete(requestContext *common.RequestContext, data *process.ProcessData, tfModel *reporttemplatetf.ReportTemplateTFModel) error {
 	// No special post-processing needed for delete operations
+	return nil
+}
+
+// restoreFieldsFromPlan restores fields that need explicit handling from the plan.
+// Called for Create/Update operations (after RestoreAllFieldsFromPlan in the orchestrator).
+// The translator always populates both deprecated and _list fields from every API response.
+// This nulls out the fields that don't belong to the active mode so the result matches the plan.
+func restoreFieldsFromPlan(requestContext *common.RequestContext, source corecommon.Getter, tfModel *reporttemplatetf.ReportTemplateTFModel) error {
+	var sourceModel reporttemplatetf.ReportTemplateTFModel
+	diags := source.Get(requestContext.Context, &sourceModel)
+	if diags.HasError() {
+		return fmt.Errorf("failed to get plan model: %s", diags.Errors())
+	}
+
+	enforceBlocksMode(&sourceModel, tfModel)
+	enforceLinksMode(&sourceModel, tfModel)
+
 	return nil
 }
 
@@ -110,5 +126,26 @@ func restoreBaseFieldsFromState(requestContext *common.RequestContext, source co
 	tfModel.Blocks = originalModel.Blocks
 	tfModel.Links = originalModel.Links
 
+	enforceBlocksMode(&originalModel, tfModel)
+	enforceLinksMode(&originalModel, tfModel)
+
 	return nil
+}
+
+func enforceBlocksMode(source *reporttemplatetf.ReportTemplateTFModel, tfModel *reporttemplatetf.ReportTemplateTFModel) {
+	if common.IsAttrKnown(source.BlocksList) {
+		tfModel.Blocks = types.StringNull()
+		tfModel.BlocksFull = types.StringNull()
+	} else {
+		tfModel.BlocksList = types.ListNull(converters.BlocksListObjectType)
+	}
+}
+
+func enforceLinksMode(source *reporttemplatetf.ReportTemplateTFModel, tfModel *reporttemplatetf.ReportTemplateTFModel) {
+	if common.IsAttrKnown(source.LinksList) {
+		tfModel.Links = types.StringNull()
+		tfModel.LinksFull = types.StringNull()
+	} else {
+		tfModel.LinksList = types.ListNull(converters.LinksListObjectType)
+	}
 }

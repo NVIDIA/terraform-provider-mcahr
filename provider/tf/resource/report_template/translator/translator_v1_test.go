@@ -64,6 +64,14 @@ func TestReportTemplateTranslatorV1_ToTFModel_Success(t *testing.T) {
 		`"report_template_name":"minimal_report_template"` +
 		`}]`
 	assert.Equal(t, expectedLinksJSON, result.Links.ValueString())
+
+	// Verify blocks_list populated
+	assert.False(t, result.BlocksList.IsNull())
+	require.Equal(t, 1, len(result.BlocksList.Elements()))
+
+	// Verify links_list populated
+	assert.False(t, result.LinksList.IsNull())
+	require.Equal(t, 1, len(result.LinksList.Elements()))
 }
 
 func TestReportTemplateTranslatorV1_ToTFModel_MinimalData(t *testing.T) {
@@ -97,6 +105,14 @@ func TestReportTemplateTranslatorV1_ToTFModel_MinimalData(t *testing.T) {
 		`}]`
 	assert.Equal(t, expectedBlocksJSON, result.Blocks.ValueString())
 	assert.Equal(t, "[]", result.Links.ValueString())
+
+	// Verify blocks_list populated (minimal has 1 block)
+	assert.False(t, result.BlocksList.IsNull())
+	require.Equal(t, 1, len(result.BlocksList.Elements()))
+
+	// Verify links_list empty (not null)
+	assert.False(t, result.LinksList.IsNull())
+	assert.Empty(t, result.LinksList.Elements())
 }
 
 func TestReportTemplateTranslatorV1_ToTFModel_NilModel(t *testing.T) {

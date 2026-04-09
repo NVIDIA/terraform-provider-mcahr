@@ -240,9 +240,10 @@ func TestPopulateFullJsonAttributes(t *testing.T) {
 
 			// given
 			ctx := context.Background()
+			resultValuesWithoutDefaults := *tt.resultValues
 
 			// when
-			err := PopulateFullJsonAttributes(ctx, tt.resultValues, tt.plan, tt.state, tt.backendVersion)
+			err := PopulateFullJsonAttributes(ctx, tt.resultValues, &resultValuesWithoutDefaults, tt.plan, tt.state, tt.backendVersion)
 
 			// then
 			if tt.expectError {
@@ -447,9 +448,10 @@ func TestPopulateFullJsonAttributes_Integration(t *testing.T) {
 	}
 
 	state := &model.ReportTemplateTFModel{}
+	resultValuesWithoutDefaults := *resultValues
 
 	// when
-	err := PopulateFullJsonAttributes(ctx, resultValues, plan, state, backendVersion)
+	err := PopulateFullJsonAttributes(ctx, resultValues, &resultValuesWithoutDefaults, plan, state, backendVersion)
 
 	// then
 	require.NoError(t, err)

@@ -44,92 +44,88 @@ description: |-
 ```terraform
 resource "mcahr_report_template" "full_report_template" {
   name = "full_report_template"
-  blocks = jsonencode([
+  blocks_list = [
     {
-      "title" : "Block Name",
-      "resource_query" : "host",
-      "group_by_tag" : "tag_0",
-      "breakdown_by_tag" : "tag_1",
-      "breakdown_tags_values" : [
+      title            = "Block Name"
+      resource_query   = "host"
+      group_by_tag     = "tag_0"
+      breakdown_by_tag = "tag_1"
+      breakdown_tags_values = [
         {
-          "color" : "#AAAAAA",
-          "values" : [
-            "passed",
-            "skipped"
-          ],
-          "label" : "label_0"
+          color  = "#AAAAAA"
+          values = ["passed", "skipped"]
+          label  = "label_0"
         }
-      ],
-      "view_mode" : "PERCENTAGE",
-      "include_other_breakdown_tag_values" : true,
-      "other_tags_to_export" : ["other_tag_1", "other_tag_2"],
-      "include_resources_without_group_tag" : false,
-      "group_by_tag_order" : {
-        "type" : "DEFAULT",
-        "values" : []
-      },
-      "resources_breakdown" : [
+      ]
+      view_mode                           = "PERCENTAGE"
+      include_other_breakdown_tag_values  = true
+      other_tags_to_export                = ["other_tag_1", "other_tag_2"]
+      include_resources_without_group_tag = false
+      group_by_tag_order = {
+        type   = "DEFAULT"
+        values = []
+      }
+      resources_breakdown = [
         {
-          "group_by_value" : "tag_0",
-          "breakdown_values" : [
+          group_by_value = "tag_0"
+          breakdown_values = [
             {
-              "value" : "value",
-              "count" : 1
+              value = "value"
+              count = 1
             }
           ]
         }
       ]
     }
-  ])
+  ]
   depends_on = [
     mcahr_report_template.minimal_report_template
   ]
-  links = jsonencode([{
-    "label" : "minimal-report",
-    "report_template_name" : "minimal_report_template"
-  }])
+  links_list = [
+    {
+      label                = "minimal-report"
+      report_template_name = "minimal_report_template"
+    }
+  ]
 }
 
 
 resource "mcahr_report_template" "minimal_report_template" {
   name = "minimal_report_template"
-  blocks = jsonencode([
+  blocks_list = [
     {
-      "title" : "Block Name",
-      "resource_query" : "host",
-      "group_by_tag" : "tag_0",
-      "breakdown_by_tag" : "tag_1",
-      "breakdown_tags_values" : [
+      title            = "Block Name"
+      resource_query   = "host"
+      group_by_tag     = "tag_0"
+      breakdown_by_tag = "tag_1"
+      breakdown_tags_values = [
         {
-          "color" : "#AAAAAA",
-          "values" : [
-            "passed",
-            "skipped"
-          ],
-          "label" : "label_0"
+          color  = "#AAAAAA"
+          values = ["passed", "skipped"]
+          label  = "label_0"
         }
-      ],
-      "view_mode" : "COUNT",
-      "include_other_breakdown_tag_values" : true,
-      "other_tags_to_export" : ["other_tag_1", "other_tag_2"],
-      "include_resources_without_group_tag" : false,
-      "group_by_tag_order" : {
-        "type" : "DEFAULT",
-        "values" : []
-      },
-      "resources_breakdown" : [
+      ]
+      view_mode                           = "COUNT"
+      include_other_breakdown_tag_values  = true
+      other_tags_to_export                = ["other_tag_1", "other_tag_2"]
+      include_resources_without_group_tag = false
+      group_by_tag_order = {
+        type   = "DEFAULT"
+        values = []
+      }
+      resources_breakdown = [
         {
-          "group_by_value" : "tag_0",
-          "breakdown_values" : [
+          group_by_value = "tag_0"
+          breakdown_values = [
             {
-              "value" : "value",
-              "count" : 1
+              value = "value"
+              count = 1
             }
           ]
         }
       ]
     }
-  ])
+  ]
 }
 ```
 
@@ -139,14 +135,85 @@ resource "mcahr_report_template" "minimal_report_template" {
 
 ### Required
 
-- `blocks` (String) The JSON encoded blocks of the report template
 - `name` (String) The name of the report template
 
 ### Optional
 
-- `links` (String) The JSON encoded links of a report template with other report templates
+- `blocks` (String, Deprecated) The JSON encoded blocks of the report template.
+- `blocks_list` (Attributes List) The blocks of the report template as a native Terraform list. Provides better plan changes and drift detection than the deprecated `blocks` JSON string. Cannot be used together with `blocks`. (see [below for nested schema](#nestedatt--blocks_list))
+- `links` (String, Deprecated) The JSON encoded links of a report template with other report templates.
+- `links_list` (Attributes List) The links of a report template with other report templates as a native Terraform list. Provides better plan changes and drift detection than the deprecated `links` JSON string. Cannot be used together with `links`. (see [below for nested schema](#nestedatt--links_list))
 
 ### Read-Only
 
 - `blocks_full` (String) Complete blocks configuration returned by the API, including server-added fields. Shows diffs when external drift is detected and when configuration changes.
 - `links_full` (String) Complete links configuration returned by the API, including server-added fields. Shows diffs when external drift is detected and when configuration changes.
+
+<a id="nestedatt--blocks_list"></a>
+### Nested Schema for `blocks_list`
+
+Required:
+
+- `breakdown_by_tag` (String) The tag to break down resources by.
+- `breakdown_tags_values` (Attributes List) Breakdown tag value configurations. (see [below for nested schema](#nestedatt--blocks_list--breakdown_tags_values))
+- `group_by_tag` (String) The tag to group resources by.
+- `resource_query` (String) The resource query for the block.
+- `title` (String) The title of the block.
+
+Optional:
+
+- `group_by_tag_order` (Attributes) The ordering configuration for group-by tags. (see [below for nested schema](#nestedatt--blocks_list--group_by_tag_order))
+- `include_other_breakdown_tag_values` (Boolean) Whether to include other breakdown tag values.
+- `include_resources_without_group_tag` (Boolean) Whether to include resources without the group tag.
+- `other_tags_to_export` (List of String) Additional tags to export.
+- `resources_breakdown` (Attributes List) Resources breakdown configurations. (see [below for nested schema](#nestedatt--blocks_list--resources_breakdown))
+- `view_mode` (String) The view mode (COUNT or PERCENTAGE).
+
+<a id="nestedatt--blocks_list--breakdown_tags_values"></a>
+### Nested Schema for `blocks_list.breakdown_tags_values`
+
+Required:
+
+- `color` (String) The color of the breakdown value.
+- `values` (List of String) The values in the breakdown group.
+
+Optional:
+
+- `label` (String) The label for the breakdown value.
+
+
+<a id="nestedatt--blocks_list--group_by_tag_order"></a>
+### Nested Schema for `blocks_list.group_by_tag_order`
+
+Optional:
+
+- `type` (String) The ordering type (DEFAULT, BY_TOTAL_ASC, BY_TOTAL_DESC, CUSTOM).
+- `values` (List of String) Custom ordering values.
+
+
+<a id="nestedatt--blocks_list--resources_breakdown"></a>
+### Nested Schema for `blocks_list.resources_breakdown`
+
+Required:
+
+- `breakdown_values` (Attributes List) The breakdown values. (see [below for nested schema](#nestedatt--blocks_list--resources_breakdown--breakdown_values))
+- `group_by_value` (String) The group-by value.
+
+<a id="nestedatt--blocks_list--resources_breakdown--breakdown_values"></a>
+### Nested Schema for `blocks_list.resources_breakdown.breakdown_values`
+
+Required:
+
+- `count` (Number) The count for the breakdown value.
+- `value` (String) The breakdown value.
+
+
+
+
+<a id="nestedatt--links_list"></a>
+### Nested Schema for `links_list`
+
+Required:
+
+- `label` (String) The label for the link.
+- `report_template_name` (String) The name of the linked report template.
