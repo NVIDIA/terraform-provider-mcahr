@@ -32,8 +32,10 @@ type DashboardTFModel struct {
 	// JSON attributes
 	Groups     types.String `tfsdk:"groups"`
 	GroupsFull types.String `tfsdk:"groups_full"`
+	GroupsList types.List   `tfsdk:"groups_list"`
 	Values     types.String `tfsdk:"values"`
 	ValuesFull types.String `tfsdk:"values_full"`
+	ValuesList types.List   `tfsdk:"values_list"`
 
 	// List attributes
 	OtherTags   types.List `tfsdk:"other_tags"`

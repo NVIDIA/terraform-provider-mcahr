@@ -22,13 +22,32 @@ Dashboard resource for creating dashboards with groups and values
 
 ### Optional
 
-- `groups` (String) The JSON encoded groups of the dashboard
+- `groups` (String, Deprecated) The JSON encoded groups of the dashboard.
+- `groups_list` (Attributes List) The groups of the dashboard as a native Terraform list. Provides better plan changes and drift detection than the deprecated `groups` JSON string. Cannot be used together with `groups`. (see [below for nested schema](#nestedatt--groups_list))
 - `identifiers` (List of String) Identifiers for the dashboard
 - `other_tags` (List of String) Additional tags for the dashboard
 - `resource_query` (String) The resource query for the dashboard
-- `values` (String) The JSON encoded values of the dashboard
+- `values` (String, Deprecated) The JSON encoded values of the dashboard.
+- `values_list` (Attributes List) The values of the dashboard as a native Terraform list. Provides better plan changes and drift detection than the deprecated `values` JSON string. Cannot be used together with `values`. (see [below for nested schema](#nestedatt--values_list))
 
 ### Read-Only
 
 - `groups_full` (String) Complete groups configuration returned by the API, including server-added fields. Shows diffs when external drift is detected and when configuration changes.
 - `values_full` (String) Complete values configuration returned by the API, including server-added fields. Shows diffs when external drift is detected and when configuration changes.
+
+<a id="nestedatt--groups_list"></a>
+### Nested Schema for `groups_list`
+
+Required:
+
+- `name` (String) The name of the group.
+- `tags` (List of String) The tags for the group.
+
+
+<a id="nestedatt--values_list"></a>
+### Nested Schema for `values_list`
+
+Required:
+
+- `color` (String) The color of the value group.
+- `values` (List of String) The values in the group.

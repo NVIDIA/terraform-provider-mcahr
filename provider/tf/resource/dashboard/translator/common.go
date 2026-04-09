@@ -23,6 +23,7 @@ import (
 	"terraform/terraform-provider/provider/tf/core/translator"
 	utils "terraform/terraform-provider/provider/tf/core/translator"
 	"terraform/terraform-provider/provider/tf/resource/dashboard/model"
+	converters "terraform/terraform-provider/provider/tf/resource/dashboard/translator/object_converters"
 )
 
 // No need for custom structs, using customattribute package instead
@@ -84,12 +85,9 @@ func (t *DashboardTranslatorCommon) buildDashboardStatement(requestContext *comm
 }
 
 func (t *DashboardTranslatorCommon) buildDashboardConfigurationJSON(requestContext *common.RequestContext, tfModel *model.DashboardTFModel) (string, error) {
-	// Parse groups and values from JSON strings
-	var groups, values any
-	json.Unmarshal([]byte(tfModel.GroupsFull.ValueString()), &groups)
-	json.Unmarshal([]byte(tfModel.ValuesFull.ValueString()), &values)
+	groups := buildGroupsForStatement(requestContext, tfModel)
+	values := buildValuesForStatement(requestContext, tfModel)
 
-	// Build configuration directly from TF model
 	config := map[string]any{
 		"resource_query": tfModel.ResourceQuery.ValueString(),
 		"groups":         groups,
@@ -100,4 +98,28 @@ func (t *DashboardTranslatorCommon) buildDashboardConfigurationJSON(requestConte
 
 	configBytes, _ := json.Marshal(config)
 	return string(configBytes), nil
+}
+
+func buildGroupsForStatement(requestContext *common.RequestContext, tfModel *model.DashboardTFModel) any {
+	if common.IsAttrKnown(tfModel.GroupsList) {
+		groups, err := converters.GroupsListToInternal(requestContext.Context, tfModel.GroupsList)
+		if err == nil {
+			return groups
+		}
+	}
+	var groups any
+	json.Unmarshal([]byte(tfModel.GroupsFull.ValueString()), &groups)
+	return groups
+}
+
+func buildValuesForStatement(requestContext *common.RequestContext, tfModel *model.DashboardTFModel) any {
+	if common.IsAttrKnown(tfModel.ValuesList) {
+		values, err := converters.ValuesListToInternal(requestContext.Context, tfModel.ValuesList)
+		if err == nil {
+			return values
+		}
+	}
+	var values any
+	json.Unmarshal([]byte(tfModel.ValuesFull.ValueString()), &values)
+	return values
 }

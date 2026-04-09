@@ -159,6 +159,106 @@ func TestDashboardTranslator_ToTFModel_EmptyOptionalFields(t *testing.T) {
 	assert.Empty(t, identifiers)
 }
 
+func TestDashboardTranslator_ToTFModel_GroupsListPopulated(t *testing.T) {
+	// Given
+	translator := &DashboardTranslator{}
+	apiModel := &dashboardapi.DashboardResponseAPIModel{
+		Output: dashboardapi.DashboardOutput{
+			Configurations: dashboardapi.DashboardConfigurations{
+				Items: []dashboardapi.ConfigurationItem{
+					{
+						Config: dashboardapi.DashboardConfig{
+							DashboardType: "TAGS_SEQUENCE",
+							Configuration: customattribute.ConfigurationJson{
+								ResourceQuery: "host",
+								Groups: []customattribute.GroupJson{
+									{Name: "g1", Tags: []string{"cloud_provider", "release_tag"}},
+									{Name: "g2", Tags: []string{"env"}},
+								},
+								Values:      []customattribute.ValueJson{},
+								OtherTags:   []string{},
+								Identifiers: []string{},
+							},
+						},
+						EntityMetadata: dashboardapi.DashboardEntityMetadata{
+							Name: "groups-test",
+						},
+					},
+				},
+			},
+		},
+		Summary: dashboardapi.DashboardSummary{Status: "success"},
+	}
+
+	requestContext := common.NewRequestContext(context.Background())
+	translationData := &coretranslator.TranslationData{}
+
+	// When
+	result, err := translator.ToTFModel(requestContext, translationData, apiModel)
+
+	// Then
+	assert.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Verify GroupsList is populated with correct structure
+	assert.False(t, result.GroupsList.IsNull())
+	assert.Equal(t, 2, len(result.GroupsList.Elements()))
+
+	// Verify ValuesList is populated (empty)
+	assert.False(t, result.ValuesList.IsNull())
+	assert.Empty(t, result.ValuesList.Elements())
+}
+
+func TestDashboardTranslator_ToTFModel_ValuesListPopulated(t *testing.T) {
+	// Given
+	translator := &DashboardTranslator{}
+	apiModel := &dashboardapi.DashboardResponseAPIModel{
+		Output: dashboardapi.DashboardOutput{
+			Configurations: dashboardapi.DashboardConfigurations{
+				Items: []dashboardapi.ConfigurationItem{
+					{
+						Config: dashboardapi.DashboardConfig{
+							DashboardType: "TAGS_SEQUENCE",
+							Configuration: customattribute.ConfigurationJson{
+								ResourceQuery: "host",
+								Groups:        []customattribute.GroupJson{},
+								Values: []customattribute.ValueJson{
+									{Color: "#78909c", Values: []string{"aws"}},
+									{Color: "#ffa726", Values: []string{"release-X"}},
+								},
+								OtherTags:   []string{},
+								Identifiers: []string{},
+							},
+						},
+						EntityMetadata: dashboardapi.DashboardEntityMetadata{
+							Name: "values-test",
+						},
+					},
+				},
+			},
+		},
+		Summary: dashboardapi.DashboardSummary{Status: "success"},
+	}
+
+	requestContext := common.NewRequestContext(context.Background())
+	translationData := &coretranslator.TranslationData{}
+
+	// When
+	result, err := translator.ToTFModel(requestContext, translationData, apiModel)
+
+	// Then
+	assert.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Verify ValuesList is populated with correct count
+	assert.False(t, result.ValuesList.IsNull())
+	assert.Equal(t, 2, len(result.ValuesList.Elements()))
+
+	// Verify GroupsList is populated (empty)
+	assert.False(t, result.GroupsList.IsNull())
+	assert.Empty(t, result.GroupsList.Elements())
+}
+
 func TestDashboardTranslator_ToTFModel_Nil(t *testing.T) {
 	// Given
 	dashboardTranslator := &DashboardTranslator{}

@@ -22,6 +22,7 @@ import (
 	customattribute "terraform/terraform-provider/provider/external_api/resources/dashboards/custom_attribute"
 	"terraform/terraform-provider/provider/tf/core/process"
 	dashboardtf "terraform/terraform-provider/provider/tf/resource/dashboard/model"
+	converters "terraform/terraform-provider/provider/tf/resource/dashboard/translator/object_converters"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -31,8 +32,7 @@ type DashboardPostProcessor struct{}
 var _ process.PostProcessor[*dashboardtf.DashboardTFModel] = &DashboardPostProcessor{}
 
 func (p *DashboardPostProcessor) PostProcessCreate(requestContext *common.RequestContext, data *process.ProcessData, tfModel *dashboardtf.DashboardTFModel) error {
-	// No post-processing needed for create - orchestrator's RestoreAllFieldsFromPlan handles restoration
-	return nil
+	return restoreFieldsFromPlan(requestContext, data.CreateRequest.Plan, tfModel)
 }
 
 func (p *DashboardPostProcessor) PostProcessRead(requestContext *common.RequestContext, data *process.ProcessData, tfModel *dashboardtf.DashboardTFModel) error {
@@ -47,12 +47,28 @@ func (p *DashboardPostProcessor) PostProcessRead(requestContext *common.RequestC
 }
 
 func (p *DashboardPostProcessor) PostProcessUpdate(requestContext *common.RequestContext, data *process.ProcessData, tfModel *dashboardtf.DashboardTFModel) error {
-	// No post-processing needed for update - orchestrator's RestoreAllFieldsFromPlan handles restoration
-	return nil
+	return restoreFieldsFromPlan(requestContext, data.UpdateRequest.Plan, tfModel)
 }
 
 func (p *DashboardPostProcessor) PostProcessDelete(requestContext *common.RequestContext, data *process.ProcessData, tfModel *dashboardtf.DashboardTFModel) error {
 	// No post-processing needed for delete operation
+	return nil
+}
+
+// restoreFieldsFromPlan restores fields that need explicit handling from the plan.
+// Called for Create/Update operations (after RestoreAllFieldsFromPlan in the orchestrator).
+// The translator always populates both deprecated and _list fields from every API response.
+// This nulls out the fields that don't belong to the active mode so the result matches the plan.
+func restoreFieldsFromPlan(requestContext *common.RequestContext, source process.Getter, tfModel *dashboardtf.DashboardTFModel) error {
+	var sourceModel dashboardtf.DashboardTFModel
+	diags := source.Get(requestContext.Context, &sourceModel)
+	if diags.HasError() {
+		return fmt.Errorf("failed to get plan model: %s", diags.Errors())
+	}
+
+	enforceGroupsMode(&sourceModel, tfModel)
+	enforceValuesMode(&sourceModel, tfModel)
+
 	return nil
 }
 
@@ -108,5 +124,27 @@ func restoreBaseFieldsFromState(requestContext *common.RequestContext, source pr
 	tfModel.Groups = originalModel.Groups
 	tfModel.Values = originalModel.Values
 
+	// Enforce list modes: null out fields that don't belong to the active mode
+	enforceGroupsMode(&originalModel, tfModel)
+	enforceValuesMode(&originalModel, tfModel)
+
 	return nil
+}
+
+func enforceGroupsMode(source *dashboardtf.DashboardTFModel, tfModel *dashboardtf.DashboardTFModel) {
+	if common.IsAttrKnown(source.GroupsList) {
+		tfModel.Groups = types.StringNull()
+		tfModel.GroupsFull = types.StringNull()
+	} else {
+		tfModel.GroupsList = types.ListNull(converters.GroupsListObjectType)
+	}
+}
+
+func enforceValuesMode(source *dashboardtf.DashboardTFModel, tfModel *dashboardtf.DashboardTFModel) {
+	if common.IsAttrKnown(source.ValuesList) {
+		tfModel.Values = types.StringNull()
+		tfModel.ValuesFull = types.StringNull()
+	} else {
+		tfModel.ValuesList = types.ListNull(converters.ValuesListObjectType)
+	}
 }

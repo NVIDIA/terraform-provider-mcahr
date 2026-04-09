@@ -164,6 +164,57 @@ func TestDashboardTranslatorV1_ToTFModel_EmptyOptionalFields(t *testing.T) {
 	assert.Empty(t, identifiers)
 }
 
+func TestDashboardTranslatorV1_ToTFModel_GroupsListPopulated(t *testing.T) {
+	t.Parallel()
+
+	// Given - V1 response with groups
+	translator := &DashboardTranslatorV1{}
+	apiModel := createFullDashboardResponseV1()
+
+	requestContext := common.NewRequestContext(context.Background())
+	translationData := &coretranslator.TranslationData{}
+
+	// When
+	result, err := translator.ToTFModel(requestContext, translationData, apiModel)
+
+	// Then
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Verify GroupsList is populated with correct count
+	assert.False(t, result.GroupsList.IsNull())
+	assert.Equal(t, 1, len(result.GroupsList.Elements()))
+
+	// Verify ValuesList is populated with correct count
+	assert.False(t, result.ValuesList.IsNull())
+	assert.Equal(t, 1, len(result.ValuesList.Elements()))
+}
+
+func TestDashboardTranslatorV1_ToTFModel_EmptyListsPopulated(t *testing.T) {
+	t.Parallel()
+
+	// Given - V1 response with empty groups/values
+	translator := &DashboardTranslatorV1{}
+	apiModel := createMinimalDashboardResponseV1()
+
+	requestContext := common.NewRequestContext(context.Background())
+	translationData := &coretranslator.TranslationData{}
+
+	// When
+	result, err := translator.ToTFModel(requestContext, translationData, apiModel)
+
+	// Then
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Empty but not null
+	assert.False(t, result.GroupsList.IsNull())
+	assert.Empty(t, result.GroupsList.Elements())
+
+	assert.False(t, result.ValuesList.IsNull())
+	assert.Empty(t, result.ValuesList.Elements())
+}
+
 func TestDashboardTranslatorV1_ToTFModel_EmptyDashboardClasses(t *testing.T) {
 	t.Parallel()
 

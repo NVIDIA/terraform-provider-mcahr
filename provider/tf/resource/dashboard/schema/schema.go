@@ -17,10 +17,13 @@ package schema
 
 import (
 	"terraform/terraform-provider/provider/common/attribute"
+	"terraform/terraform-provider/provider/tf/core/plan/modifiers/migration"
 	coreschema "terraform/terraform-provider/provider/tf/core/schema"
 	"terraform/terraform-provider/provider/tf/core/validators"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -63,10 +66,35 @@ func (s *DashboardSchema) GetSchema() schema.Schema {
 
 	// JSON attributes
 	builder.AddAttribute("groups", schema.StringAttribute{
-		MarkdownDescription: "The JSON encoded groups of the dashboard",
+		MarkdownDescription: "The JSON encoded groups of the dashboard.",
+		DeprecationMessage:  "Use groups_list instead. The groups attribute encodes groups as a single JSON string, which causes Terraform to show full-string diffs even for small changes. groups_list uses native Terraform list types for proper per-element diffs. This attribute will be removed in a future version.",
 		Optional:            true,
 		Computed:            true,
-		Default:             stringdefault.StaticString("[]"),
+		Validators: []validator.String{
+			stringvalidator.ConflictsWith(path.MatchRoot("groups_list")),
+		},
+	})
+
+	builder.AddAttribute("groups_list", schema.ListNestedAttribute{
+		MarkdownDescription: "The groups of the dashboard as a native Terraform list. Provides better plan changes and drift detection than the deprecated `groups` JSON string. Cannot be used together with `groups`.",
+		Optional:            true,
+		Computed:            true,
+		PlanModifiers: []planmodifier.List{
+			migration.DefaultListWithDeprecatedConflict(path.MatchRoot("groups")),
+		},
+		NestedObject: schema.NestedAttributeObject{
+			Attributes: map[string]schema.Attribute{
+				"name": schema.StringAttribute{
+					MarkdownDescription: "The name of the group.",
+					Required:            true,
+				},
+				"tags": schema.ListAttribute{
+					MarkdownDescription: "The tags for the group.",
+					Required:            true,
+					ElementType:         types.StringType,
+				},
+			},
+		},
 	})
 
 	builder.AddAttribute("groups_full", schema.StringAttribute{
@@ -75,10 +103,35 @@ func (s *DashboardSchema) GetSchema() schema.Schema {
 	})
 
 	builder.AddAttribute("values", schema.StringAttribute{
-		MarkdownDescription: "The JSON encoded values of the dashboard",
+		MarkdownDescription: "The JSON encoded values of the dashboard.",
+		DeprecationMessage:  "Use values_list instead. The values attribute encodes values as a single JSON string, which causes Terraform to show full-string diffs even for small changes. values_list uses native Terraform list types for proper per-element diffs. This attribute will be removed in a future version.",
 		Optional:            true,
 		Computed:            true,
-		Default:             stringdefault.StaticString("[]"),
+		Validators: []validator.String{
+			stringvalidator.ConflictsWith(path.MatchRoot("values_list")),
+		},
+	})
+
+	builder.AddAttribute("values_list", schema.ListNestedAttribute{
+		MarkdownDescription: "The values of the dashboard as a native Terraform list. Provides better plan changes and drift detection than the deprecated `values` JSON string. Cannot be used together with `values`.",
+		Optional:            true,
+		Computed:            true,
+		PlanModifiers: []planmodifier.List{
+			migration.DefaultListWithDeprecatedConflict(path.MatchRoot("values")),
+		},
+		NestedObject: schema.NestedAttributeObject{
+			Attributes: map[string]schema.Attribute{
+				"color": schema.StringAttribute{
+					MarkdownDescription: "The color of the value group.",
+					Required:            true,
+				},
+				"values": schema.ListAttribute{
+					MarkdownDescription: "The values in the group.",
+					Required:            true,
+					ElementType:         types.StringType,
+				},
+			},
+		},
 	})
 
 	builder.AddAttribute("values_full", schema.StringAttribute{
@@ -122,7 +175,6 @@ func (s *DashboardSchema) GetFieldComparisonRules() map[string]coreschema.FieldC
 			Behavior: coreschema.SkipComparison,
 			Reason:   "Has values_full variant. Use values_full for detecting API modifications.",
 		},
-
 		// NOTE: groups_full and values_full are NOT skipped
 		// They will be compared to detect real API modifications
 	}

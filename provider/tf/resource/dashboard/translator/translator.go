@@ -23,6 +23,7 @@ import (
 	"terraform/terraform-provider/provider/external_api/resources/statement"
 	"terraform/terraform-provider/provider/tf/core/translator"
 	dashboardtf "terraform/terraform-provider/provider/tf/resource/dashboard/model"
+	converters "terraform/terraform-provider/provider/tf/resource/dashboard/translator/object_converters"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -73,14 +74,26 @@ func (t *DashboardTranslator) ToTFModel(requestContext *common.RequestContext, t
 	otherTags := translator.ListValueFromStringSlice(requestContext.Context, config.Configuration.OtherTags)
 	identifiers := translator.ListValueFromStringSlice(requestContext.Context, config.Configuration.Identifiers)
 
+	groupsList, gDiags := converters.GroupsListFromAPI(config.Configuration.Groups)
+	if gDiags.HasError() {
+		return nil, fmt.Errorf("failed to convert groups to groups_list: %s", gDiags.Errors())
+	}
+
+	valuesList, vDiags := converters.ValuesListFromAPI(config.Configuration.Values)
+	if vDiags.HasError() {
+		return nil, fmt.Errorf("failed to convert values to values_list: %s", vDiags.Errors())
+	}
+
 	tfModel := &dashboardtf.DashboardTFModel{
 		Name:          types.StringValue(metadata.Name),
 		DashboardType: types.StringValue(config.DashboardType),
 		ResourceQuery: types.StringValue(config.Configuration.ResourceQuery),
 		Groups:        groupsValue,
 		GroupsFull:    groupsValue,
+		GroupsList:    groupsList,
 		Values:        valuesValue,
 		ValuesFull:    valuesValue,
+		ValuesList:    valuesList,
 		OtherTags:     otherTags,
 		Identifiers:   identifiers,
 	}

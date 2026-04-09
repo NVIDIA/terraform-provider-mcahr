@@ -17,7 +17,9 @@ package translator
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
+	"strings"
 	"testing"
 
 	"terraform/terraform-provider/provider/common"
@@ -177,6 +179,92 @@ func TestDashboardTranslatorCommon_ToAPIModel_Full(t *testing.T) {
 			assert.Equal(t, common.V2, result.APIVersion)
 		})
 	}
+}
+
+func TestDashboardTranslatorCommon_ToAPIModel_ListMode(t *testing.T) {
+	// Given - uses groups_list and values_list (groups/values deprecated fields are null)
+	translator := &DashboardTranslatorCommon{}
+	ctx := context.Background()
+
+	groupsTags, _ := types.ListValueFrom(ctx, types.StringType, []string{"tag1", "tag2"})
+	groupObj, _ := types.ObjectValue(
+		map[string]attr.Type{
+			"name": types.StringType,
+			"tags": types.ListType{ElemType: types.StringType},
+		},
+		map[string]attr.Value{
+			"name": types.StringValue("group1"),
+			"tags": groupsTags,
+		},
+	)
+	groupsList, _ := types.ListValue(
+		types.ObjectType{AttrTypes: map[string]attr.Type{
+			"name": types.StringType,
+			"tags": types.ListType{ElemType: types.StringType},
+		}},
+		[]attr.Value{groupObj},
+	)
+
+	valsInner, _ := types.ListValueFrom(ctx, types.StringType, []string{"value1", "value2"})
+	valObj, _ := types.ObjectValue(
+		map[string]attr.Type{
+			"color":  types.StringType,
+			"values": types.ListType{ElemType: types.StringType},
+		},
+		map[string]attr.Value{
+			"color":  types.StringValue("red"),
+			"values": valsInner,
+		},
+	)
+	valuesList, _ := types.ListValue(
+		types.ObjectType{AttrTypes: map[string]attr.Type{
+			"color":  types.StringType,
+			"values": types.ListType{ElemType: types.StringType},
+		}},
+		[]attr.Value{valObj},
+	)
+
+	tfModel := &dashboardtf.DashboardTFModel{
+		Name:          types.StringValue("test-dashboard"),
+		DashboardType: types.StringValue("test-type"),
+		ResourceQuery: types.StringValue("host"),
+		Groups:        types.StringNull(),
+		GroupsFull:    types.StringNull(),
+		GroupsList:    groupsList,
+		Values:        types.StringNull(),
+		ValuesFull:    types.StringNull(),
+		ValuesList:    valuesList,
+		OtherTags:     types.ListValueMust(types.StringType, []attr.Value{}),
+		Identifiers:   types.ListValueMust(types.StringType, []attr.Value{}),
+	}
+
+	requestContext := common.NewRequestContext(context.Background()).
+		WithOperation(common.Create).
+		WithAPIVersion(common.V2).
+		WithBackendVersion(&version.BackendVersion{Major: 2, Minor: 0, Patch: 0})
+	translationData := &utils.TranslationData{}
+
+	// When
+	result, err := translator.ToAPIModelWithVersion(requestContext, translationData, tfModel)
+
+	// Then
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	assert.Contains(t, result.Statement, "define_dashboard")
+
+	// The configuration is base64 encoded -- extract and decode it
+	parts := strings.SplitN(result.Statement, "dashboard_configuration=", 2)
+	require.Len(t, parts, 2, "statement should contain dashboard_configuration")
+	b64 := strings.Trim(strings.TrimSuffix(parts[1], ")"), "\"")
+	decoded, err := base64.StdEncoding.DecodeString(b64)
+	require.NoError(t, err)
+
+	configJSON := string(decoded)
+	assert.Contains(t, configJSON, "group1")
+	assert.Contains(t, configJSON, "tag1")
+	assert.Contains(t, configJSON, "red")
+	assert.Contains(t, configJSON, "value1")
 }
 
 func TestDashboardTranslatorCommon_ToAPIModel_UnsupportedOperation(t *testing.T) {
