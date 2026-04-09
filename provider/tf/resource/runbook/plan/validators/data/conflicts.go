@@ -30,7 +30,9 @@ import (
 // crossFieldConflicts maps root config fields to data JSON fields they conflict with
 // (when the names differ). Used for migrated struct fields that replace deprecated JSON fields.
 var crossFieldConflicts = map[string]string{
-	"cells_list": "cells",
+	"cells_list":           "cells",
+	"params_list":          "params",
+	"external_params_list": "external_params",
 }
 
 // validateNoFieldConflicts validates that fields are set in at most one of the original TF model or data JSON
@@ -92,6 +94,10 @@ func getRootFieldValue(m *model.RunbookTFModel, jsonFieldName string) attr.Value
 	switch jsonFieldName {
 	case "cells_list":
 		return m.CellsList
+	case "params_list":
+		return m.ParamsList
+	case "external_params_list":
+		return m.ExternalParamsList
 	default:
 		return nil
 	}

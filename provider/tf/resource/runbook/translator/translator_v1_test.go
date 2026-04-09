@@ -144,6 +144,20 @@ func TestRunbookTranslatorV1_ToTFModel(t *testing.T) {
 				cellObj := tfModel.CellsList.Elements()[0].(types.Object)
 				assert.Equal(t, "print('hello')", cellObj.Attributes()["op"].(types.String).ValueString())
 				assert.Equal(t, "cell1", cellObj.Attributes()["name"].(types.String).ValueString())
+
+				// Check params_list
+				assert.False(t, tfModel.ParamsList.IsNull())
+				require.Equal(t, 1, len(tfModel.ParamsList.Elements()))
+				paramObj := tfModel.ParamsList.Elements()[0].(types.Object)
+				assert.Equal(t, "param1", paramObj.Attributes()["name"].(types.String).ValueString())
+				assert.Equal(t, "value1", paramObj.Attributes()["value"].(types.String).ValueString())
+
+				// Check external_params_list
+				assert.False(t, tfModel.ExternalParamsList.IsNull())
+				require.Equal(t, 1, len(tfModel.ExternalParamsList.Elements()))
+				extObj := tfModel.ExternalParamsList.Elements()[0].(types.Object)
+				assert.Equal(t, "ext1", extObj.Attributes()["name"].(types.String).ValueString())
+				assert.Equal(t, "api", extObj.Attributes()["source"].(types.String).ValueString())
 			},
 		},
 		{
@@ -245,6 +259,8 @@ func TestRunbookTranslatorV1_ToTFModel(t *testing.T) {
 				assert.Equal(t, "[]", tfModel.Cells.ValueString())
 				assert.Equal(t, "null", tfModel.Params.ValueString())
 				assert.Equal(t, 0, len(tfModel.CellsList.Elements()))
+				assert.True(t, tfModel.ParamsList.IsNull())
+				assert.True(t, tfModel.ExternalParamsList.IsNull())
 			},
 		},
 		{
@@ -375,9 +391,24 @@ func TestRunbookTranslatorV1_JSONFieldHandling(t *testing.T) {
 	assert.Contains(t, tfModel.Params.ValueString(), "param1")
 	assert.Equal(t, tfModel.Params.ValueString(), tfModel.ParamsFull.ValueString())
 
+	// Check params_list
+	assert.False(t, tfModel.ParamsList.IsNull())
+	require.Equal(t, 1, len(tfModel.ParamsList.Elements()))
+	paramObj := tfModel.ParamsList.Elements()[0].(types.Object)
+	assert.Equal(t, "param1", paramObj.Attributes()["name"].(types.String).ValueString())
+	assert.Equal(t, true, paramObj.Attributes()["required"].(types.Bool).ValueBool())
+
 	// Check external params
 	assert.Contains(t, tfModel.ExternalParams.ValueString(), "ext1")
 	assert.Equal(t, tfModel.ExternalParams.ValueString(), tfModel.ExternalParamsFull.ValueString())
+
+	// Check external_params_list
+	assert.False(t, tfModel.ExternalParamsList.IsNull())
+	require.Equal(t, 1, len(tfModel.ExternalParamsList.Elements()))
+	epObj := tfModel.ExternalParamsList.Elements()[0].(types.Object)
+	assert.Equal(t, "ext1", epObj.Attributes()["name"].(types.String).ValueString())
+	assert.Equal(t, "api_endpoint", epObj.Attributes()["source"].(types.String).ValueString())
+	assert.Equal(t, "$.data", epObj.Attributes()["json_path"].(types.String).ValueString())
 
 	// Check cells_list has both cells
 	assert.False(t, tfModel.CellsList.IsNull())

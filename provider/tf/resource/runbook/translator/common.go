@@ -88,10 +88,6 @@ func (r *RunbookTranslatorCommon) buildRunbookStatement(requestContext *common.R
 		SetStringField("notebook_name", tfModel.Name.ValueString(), "name").
 		SetField("enabled", tfModel.Enabled.ValueBool(), "enabled").
 		SetField("timeout_ms", tfModel.TimeoutMs.ValueInt64(), "timeout_ms").
-		// Notice that we sent the full version of JSON fields
-		SetField("params", tfModel.ParamsFull.ValueString(), "params").
-		SetField("external_params", tfModel.ExternalParamsFull.ValueString(), "external_params").
-		// ...
 		SetStringField("description", tfModel.Description.ValueString(), "description").
 		SetStringField("allowed_resources_query", tfModel.AllowedResourcesQuery.ValueString(), "allowed_resources_query").
 		SetStringField("communication_workspace", tfModel.CommunicationWorkspace.ValueString(), "communication_workspace").
@@ -120,6 +116,18 @@ func (r *RunbookTranslatorCommon) buildRunbookStatement(requestContext *common.R
 	}
 	builder.SetField("cells", apiCells, "cells")
 
+	apiParams, err := buildParamsForStatement(requestContext, tfModel)
+	if err != nil {
+		return "", fmt.Errorf("failed to build params for statement: %v", err)
+	}
+	builder.SetField("params", apiParams, "params")
+
+	apiExternalParams, err := buildExternalParamsForStatement(requestContext, tfModel)
+	if err != nil {
+		return "", fmt.Errorf("failed to build external_params for statement: %v", err)
+	}
+	builder.SetField("external_params", apiExternalParams, "external_params")
+
 	return builder.Build(), nil
 }
 
@@ -133,6 +141,36 @@ func buildCellsForStatement(requestContext *common.RequestContext, tfModel *runb
 	}
 
 	return customattribute.MapCellsToAPIModel(requestContext, tfModel.Cells.ValueString())
+}
+
+func buildParamsForStatement(requestContext *common.RequestContext, tfModel *runbooktf.RunbookTFModel) (string, error) {
+	if !tfModel.ParamsList.IsNull() && !tfModel.ParamsList.IsUnknown() {
+		params, err := converters.ParamsListToInternal(requestContext.Context, tfModel.ParamsList)
+		if err != nil {
+			return "", fmt.Errorf("failed to convert params_list to internal model: %v", err)
+		}
+		jsonBytes, err := json.Marshal(params)
+		if err != nil {
+			return "", fmt.Errorf("failed to marshal params: %v", err)
+		}
+		return string(jsonBytes), nil
+	}
+	return tfModel.ParamsFull.ValueString(), nil
+}
+
+func buildExternalParamsForStatement(requestContext *common.RequestContext, tfModel *runbooktf.RunbookTFModel) (string, error) {
+	if !tfModel.ExternalParamsList.IsNull() && !tfModel.ExternalParamsList.IsUnknown() {
+		params, err := converters.ExternalParamsListToInternal(requestContext.Context, tfModel.ExternalParamsList)
+		if err != nil {
+			return "", fmt.Errorf("failed to convert external_params_list to internal model: %v", err)
+		}
+		jsonBytes, err := json.Marshal(params)
+		if err != nil {
+			return "", fmt.Errorf("failed to marshal external_params: %v", err)
+		}
+		return string(jsonBytes), nil
+	}
+	return tfModel.ExternalParamsFull.ValueString(), nil
 }
 
 func buildParamsGroupsJSON(requestContext *common.RequestContext, tfModel *runbooktf.RunbookTFModel) (string, error) {

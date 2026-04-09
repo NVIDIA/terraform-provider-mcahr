@@ -34,9 +34,11 @@ type RunbookTFModel struct {
 
 	Params     types.String `tfsdk:"params" json:"params,omitempty"`
 	ParamsFull types.String `tfsdk:"params_full" json:"params_full,omitempty"`
+	ParamsList types.List   `tfsdk:"params_list" json:"params_list,omitempty"`
 
 	ExternalParams     types.String `tfsdk:"external_params" json:"external_params,omitempty"`
 	ExternalParamsFull types.String `tfsdk:"external_params_full" json:"external_params_full,omitempty"`
+	ExternalParamsList types.List   `tfsdk:"external_params_list" json:"external_params_list,omitempty"`
 
 	// Optional boolean fields
 	Enabled types.Bool `tfsdk:"enabled" json:"enabled,omitempty"`

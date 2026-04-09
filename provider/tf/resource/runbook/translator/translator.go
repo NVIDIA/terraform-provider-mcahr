@@ -114,6 +114,13 @@ func toTFModelJsonFields(tfModel *runbooktf.RunbookTFModel, cells []customattrib
 	tfModel.Params = types.StringValue(string(paramsJson))
 	tfModel.ParamsFull = types.StringValue(string(paramsJson))
 
+	// ParamsList
+	paramsList, paramsDiags := converters.ParamsListFromAPI(params)
+	if paramsDiags.HasError() {
+		return fmt.Errorf("failed to convert params to params_list: %s", paramsDiags.Errors())
+	}
+	tfModel.ParamsList = paramsList
+
 	// External Params
 	externalParamsJson, err := json.Marshal(externalParams)
 	if err != nil {
@@ -121,6 +128,13 @@ func toTFModelJsonFields(tfModel *runbooktf.RunbookTFModel, cells []customattrib
 	}
 	tfModel.ExternalParams = types.StringValue(string(externalParamsJson))
 	tfModel.ExternalParamsFull = types.StringValue(string(externalParamsJson))
+
+	// ExternalParamsList
+	externalParamsList, epDiags := converters.ExternalParamsListFromAPI(externalParams)
+	if epDiags.HasError() {
+		return fmt.Errorf("failed to convert external_params to external_params_list: %s", epDiags.Errors())
+	}
+	tfModel.ExternalParamsList = externalParamsList
 
 	return nil
 }

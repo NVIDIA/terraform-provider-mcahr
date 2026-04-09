@@ -121,9 +121,11 @@ func restoreFieldsFromPlan(requestContext *common.RequestContext, source corecom
 	// into state, causing "inconsistent result after apply" errors.
 	setParamsGroups(sourceModel.ParamsGroups, tfModel)
 
-	// Enforce cells mode: the translator populates cells, cells_full, and cells_list from every
+	// Enforce list modes: the translator populates both deprecated and _list fields from every
 	// API response. Null out the fields that don't belong to the active mode so the plan matches.
 	enforceCellsMode(&sourceModel, tfModel)
+	enforceParamsMode(&sourceModel, tfModel)
+	enforceExternalParamsMode(&sourceModel, tfModel)
 
 	return nil
 }
@@ -152,9 +154,11 @@ func restoreBaseFieldsFromState(requestContext *common.RequestContext, source co
 	tfModel.Params = originalModel.Params
 	tfModel.ExternalParams = originalModel.ExternalParams
 
-	// Enforce cells mode: the translator populates all three (cells, cells_full, cells_list)
-	// from every API response. Null out the fields that don't belong to the active mode.
+	// Enforce list modes: the translator populates both deprecated and _list fields from every
+	// API response. Null out the fields that don't belong to the active mode.
 	enforceCellsMode(&originalModel, tfModel)
+	enforceParamsMode(&originalModel, tfModel)
+	enforceExternalParamsMode(&originalModel, tfModel)
 
 	// Restore special feature field
 	tfModel.Data = originalModel.Data
@@ -171,11 +175,27 @@ func restoreBaseFieldsFromState(requestContext *common.RequestContext, source co
 //   - cells mode (source has cells_list null): cells_list is set to null
 func enforceCellsMode(source *runbooktf.RunbookTFModel, tfModel *runbooktf.RunbookTFModel) {
 	if common.IsAttrKnown(source.CellsList) {
-		// cells_list mode: cells and cells_full must be null
 		tfModel.Cells = types.StringNull()
 		tfModel.CellsFull = types.StringNull()
 	} else {
-		// cells mode: cells_list must be null
 		tfModel.CellsList = types.ListNull(converters.CellsListObjectType)
+	}
+}
+
+func enforceParamsMode(source *runbooktf.RunbookTFModel, tfModel *runbooktf.RunbookTFModel) {
+	if common.IsAttrKnown(source.ParamsList) {
+		tfModel.Params = types.StringNull()
+		tfModel.ParamsFull = types.StringNull()
+	} else {
+		tfModel.ParamsList = types.ListNull(converters.ParamsListObjectType)
+	}
+}
+
+func enforceExternalParamsMode(source *runbooktf.RunbookTFModel, tfModel *runbooktf.RunbookTFModel) {
+	if common.IsAttrKnown(source.ExternalParamsList) {
+		tfModel.ExternalParams = types.StringNull()
+		tfModel.ExternalParamsFull = types.StringNull()
+	} else {
+		tfModel.ExternalParamsList = types.ListNull(converters.ExternalParamsListObjectType)
 	}
 }

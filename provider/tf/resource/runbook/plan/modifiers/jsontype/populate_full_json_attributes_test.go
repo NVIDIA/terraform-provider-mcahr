@@ -395,17 +395,18 @@ func TestPopulateFullJsonAttributes_Integration(t *testing.T) {
 func TestShouldSkipForReplacement(t *testing.T) {
 	cellsConfig := JSON_ATTRIBUTES_TO_POPULATE["cells"]
 	paramsConfig := JSON_ATTRIBUTES_TO_POPULATE["params"]
+	extParamsConfig := JSON_ATTRIBUTES_TO_POPULATE["external_params"]
 
-	cellsList := types.ListValueMust(types.StringType, []attr.Value{types.StringValue("cell")})
+	dummyList := types.ListValueMust(types.StringType, []attr.Value{types.StringValue("item")})
 
 	t.Run("cells_list active and cells not explicitly set → skip and null", func(t *testing.T) {
 		resultValues := &model.RunbookTFModel{
-			CellsList: cellsList,
+			CellsList: dummyList,
 			Cells:     types.StringValue("[]"),
 			CellsFull: types.StringValue("[]"),
 		}
 		resultWithoutDefaults := &model.RunbookTFModel{
-			Cells: types.StringNull(), // not explicitly set
+			Cells: types.StringNull(),
 		}
 		plan := &model.RunbookTFModel{
 			CellsFull: types.StringValue("not_null"),
@@ -417,16 +418,17 @@ func TestShouldSkipForReplacement(t *testing.T) {
 		assert.True(t, resultValues.Cells.IsNull(), "cells should be nulled")
 		assert.True(t, resultValues.CellsFull.IsNull(), "cells_full should be nulled")
 		assert.True(t, plan.CellsFull.IsNull(), "plan cells_full should be nulled")
+		assert.Equal(t, dummyList, resultValues.CellsList, "cells_list should remain unchanged")
 	})
 
 	t.Run("cells_list active but cells explicitly set → don't skip (conflict case)", func(t *testing.T) {
 		resultValues := &model.RunbookTFModel{
-			CellsList: cellsList,
+			CellsList: dummyList,
 			Cells:     types.StringValue(`[{"op":"test"}]`),
 			CellsFull: types.StringValue("something"),
 		}
 		resultWithoutDefaults := &model.RunbookTFModel{
-			Cells: types.StringValue(`[{"op":"test"}]`), // explicitly set
+			Cells: types.StringValue(`[{"op":"test"}]`),
 		}
 		plan := &model.RunbookTFModel{
 			CellsFull: types.StringValue("not_null"),
@@ -435,7 +437,7 @@ func TestShouldSkipForReplacement(t *testing.T) {
 		skipped := shouldSkipForReplacement(cellsConfig, resultValues, resultWithoutDefaults, plan)
 
 		assert.False(t, skipped)
-		assert.False(t, resultValues.Cells.IsNull(), "cells should not be nulled")
+		assert.Equal(t, `[{"op":"test"}]`, resultValues.Cells.ValueString())
 	})
 
 	t.Run("cells_list not active → don't skip", func(t *testing.T) {
@@ -453,7 +455,89 @@ func TestShouldSkipForReplacement(t *testing.T) {
 		assert.False(t, skipped)
 	})
 
-	t.Run("no replacement configured → don't skip", func(t *testing.T) {
+	t.Run("params_list active and params not explicitly set → skip and null", func(t *testing.T) {
+		resultValues := &model.RunbookTFModel{
+			ParamsList: dummyList,
+			Params:     types.StringValue("[]"),
+			ParamsFull: types.StringValue("[]"),
+		}
+		resultWithoutDefaults := &model.RunbookTFModel{
+			Params: types.StringNull(),
+		}
+		plan := &model.RunbookTFModel{
+			ParamsFull: types.StringValue("not_null"),
+		}
+
+		skipped := shouldSkipForReplacement(paramsConfig, resultValues, resultWithoutDefaults, plan)
+
+		assert.True(t, skipped)
+		assert.True(t, resultValues.Params.IsNull(), "params should be nulled")
+		assert.True(t, resultValues.ParamsFull.IsNull(), "params_full should be nulled")
+		assert.True(t, plan.ParamsFull.IsNull(), "plan params_full should be nulled")
+		assert.Equal(t, dummyList, resultValues.ParamsList, "params_list should remain unchanged")
+	})
+
+	t.Run("params_list active but params explicitly set → don't skip (conflict case)", func(t *testing.T) {
+		resultValues := &model.RunbookTFModel{
+			ParamsList: dummyList,
+			Params:     types.StringValue(`[{"name":"p1","value":"v1"}]`),
+			ParamsFull: types.StringValue("something"),
+		}
+		resultWithoutDefaults := &model.RunbookTFModel{
+			Params: types.StringValue(`[{"name":"p1","value":"v1"}]`),
+		}
+		plan := &model.RunbookTFModel{
+			ParamsFull: types.StringValue("not_null"),
+		}
+
+		skipped := shouldSkipForReplacement(paramsConfig, resultValues, resultWithoutDefaults, plan)
+
+		assert.False(t, skipped)
+		assert.Equal(t, `[{"name":"p1","value":"v1"}]`, resultValues.Params.ValueString())
+	})
+
+	t.Run("external_params_list active and external_params not explicitly set → skip and null", func(t *testing.T) {
+		resultValues := &model.RunbookTFModel{
+			ExternalParamsList: dummyList,
+			ExternalParams:     types.StringValue("[]"),
+			ExternalParamsFull: types.StringValue("[]"),
+		}
+		resultWithoutDefaults := &model.RunbookTFModel{
+			ExternalParams: types.StringNull(),
+		}
+		plan := &model.RunbookTFModel{
+			ExternalParamsFull: types.StringValue("not_null"),
+		}
+
+		skipped := shouldSkipForReplacement(extParamsConfig, resultValues, resultWithoutDefaults, plan)
+
+		assert.True(t, skipped)
+		assert.True(t, resultValues.ExternalParams.IsNull(), "external_params should be nulled")
+		assert.True(t, resultValues.ExternalParamsFull.IsNull(), "external_params_full should be nulled")
+		assert.True(t, plan.ExternalParamsFull.IsNull(), "plan external_params_full should be nulled")
+		assert.Equal(t, dummyList, resultValues.ExternalParamsList, "external_params_list should remain unchanged")
+	})
+
+	t.Run("external_params_list active but external_params explicitly set → don't skip (conflict case)", func(t *testing.T) {
+		resultValues := &model.RunbookTFModel{
+			ExternalParamsList: dummyList,
+			ExternalParams:     types.StringValue(`[{"name":"ep1","source":"api"}]`),
+			ExternalParamsFull: types.StringValue("something"),
+		}
+		resultWithoutDefaults := &model.RunbookTFModel{
+			ExternalParams: types.StringValue(`[{"name":"ep1","source":"api"}]`),
+		}
+		plan := &model.RunbookTFModel{
+			ExternalParamsFull: types.StringValue("not_null"),
+		}
+
+		skipped := shouldSkipForReplacement(extParamsConfig, resultValues, resultWithoutDefaults, plan)
+
+		assert.False(t, skipped)
+		assert.Equal(t, `[{"name":"ep1","source":"api"}]`, resultValues.ExternalParams.ValueString())
+	})
+
+	t.Run("replacement field at zero value → don't skip", func(t *testing.T) {
 		resultValues := &model.RunbookTFModel{
 			Params: types.StringValue(`[{"name":"p1"}]`),
 		}
@@ -462,6 +546,6 @@ func TestShouldSkipForReplacement(t *testing.T) {
 
 		skipped := shouldSkipForReplacement(paramsConfig, resultValues, resultWithoutDefaults, plan)
 
-		assert.False(t, skipped, "params has no replacement yet, should not skip")
+		assert.False(t, skipped)
 	})
 }

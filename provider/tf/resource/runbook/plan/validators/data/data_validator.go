@@ -71,4 +71,19 @@ func ApplyDataValidators(ctx context.Context, req resource.ValidateConfigRequest
 			err.Error(),
 		)
 	}
+
+	if err := validateDataParams(dataMap); err != nil {
+		resp.Diagnostics.AddError(
+			"Invalid Param in Data JSON",
+			err.Error(),
+		)
+	}
+
+	if err := validateDataExternalParams(dataMap); err != nil {
+		resp.Diagnostics.AddError(
+			"Invalid External Param in Data JSON",
+			err.Error(),
+		)
+	}
+
 }

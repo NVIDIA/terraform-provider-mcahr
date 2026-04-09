@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	customattribute "terraform/terraform-provider/provider/external_api/resources/runbooks/custom_attribute"
+	"terraform/terraform-provider/provider/tf/core/validators"
 )
 
 // validateArrayField validates each element in data.<fieldName> using the provided callback.
@@ -56,6 +57,23 @@ func validateDataCells(dataMap map[string]any) error {
 	})
 }
 
+func validateDataParams(dataMap map[string]any) error {
+	return validateArrayField("params", dataMap, func(index int, element map[string]interface{}) error {
+
+		return validateName("params", index, element)
+	})
+}
+
+func validateDataExternalParams(dataMap map[string]any) error {
+	return validateArrayField("external_params", dataMap, func(index int, element map[string]interface{}) error {
+
+		if err := validateName("external_params", index, element); err != nil {
+			return err
+		}
+		return validateSource(index, element)
+	})
+}
+
 // --- Shared element checks ---
 
 func validateCellType(index int, element map[string]interface{}) error {
@@ -67,6 +85,28 @@ func validateCellType(index int, element map[string]interface{}) error {
 	return nil
 }
 
+func validateName(fieldName string, index int, obj map[string]interface{}) error {
+	name, _ := obj["name"].(string)
+	if name == "" {
+		return fmt.Errorf("data.%s[%d] is missing the required \"name\" field", fieldName, index)
+	}
+	if !validators.IsValidName(name) {
+		return fmt.Errorf("data.%s[%d] \"name\" must contain only alphanumeric characters and underscores, and cannot start with a digit, got: %q", fieldName, index, name)
+	}
+	return nil
+}
+
+func validateSource(index int, obj map[string]interface{}) error {
+	source, _ := obj["source"].(string)
+	if source == "" {
+		return fmt.Errorf("data.external_params[%d] is missing the required \"source\" field (must be one of %v)", index, customattribute.ValidExternalParamSources)
+	}
+	if !isValidExternalParamSource(source) {
+		return fmt.Errorf("data.external_params[%d] has invalid \"source\" %q (must be one of %v)", index, source, customattribute.ValidExternalParamSources)
+	}
+	return nil
+}
+
 func isValidCellType(cellType string) bool {
 	switch cellType {
 	case customattribute.OP_LANG_TYPE, customattribute.MARKDOWN_TYPE:
@@ -74,4 +114,13 @@ func isValidCellType(cellType string) bool {
 	default:
 		return false
 	}
+}
+
+func isValidExternalParamSource(source string) bool {
+	for _, valid := range customattribute.ValidExternalParamSources {
+		if source == valid {
+			return true
+		}
+	}
+	return false
 }

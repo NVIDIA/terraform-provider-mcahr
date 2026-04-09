@@ -29,6 +29,8 @@ var (
 	DefaultExternalParamExport      = false
 	DefaultExternalParamType        = "EXTERNAL"
 	DefaultExternalParamDescription = ""
+
+	ValidExternalParamSources = []string{"alertmanager"}
 )
 
 type ExternalParamJson struct {

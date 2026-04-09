@@ -214,6 +214,100 @@ func TestValidateNoFieldConflicts(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name: "params_list in root conflicts with params in data JSON",
+			tfModel: &model.RunbookTFModel{
+				Name: types.StringValue("rb"),
+				ParamsList: func() types.List {
+					paramObj, _ := types.ObjectValue(
+						map[string]attr.Type{
+							"name": types.StringType, "value": types.StringType,
+							"required": types.BoolType, "export": types.BoolType,
+							"description": types.StringType,
+						},
+						map[string]attr.Value{
+							"name": types.StringValue("p1"), "value": types.StringValue("v1"),
+							"required": types.BoolValue(false), "export": types.BoolValue(false),
+							"description": types.StringValue(""),
+						},
+					)
+					objType := types.ObjectType{AttrTypes: map[string]attr.Type{
+						"name": types.StringType, "value": types.StringType,
+						"required": types.BoolType, "export": types.BoolType,
+						"description": types.StringType,
+					}}
+					list, _ := types.ListValue(objType, []attr.Value{paramObj})
+					return list
+				}(),
+				Data: types.StringValue(`{
+					"params": [{"name": "p2", "value": "v2"}]
+				}`),
+			},
+			expectError: true,
+			errorFields: []string{"params_list (conflicts with params in data JSON)"},
+		},
+		{
+			name: "params_list null with params in data JSON — no cross-field error",
+			tfModel: &model.RunbookTFModel{
+				Name: types.StringValue("rb"),
+				ParamsList: types.ListNull(types.ObjectType{AttrTypes: map[string]attr.Type{
+					"name": types.StringType, "value": types.StringType,
+					"required": types.BoolType, "export": types.BoolType,
+					"description": types.StringType,
+				}}),
+				Data: types.StringValue(`{
+					"params": [{"name": "p1", "value": "v1"}]
+				}`),
+			},
+			expectError: false,
+		},
+		{
+			name: "external_params_list in root conflicts with external_params in data JSON",
+			tfModel: &model.RunbookTFModel{
+				Name: types.StringValue("rb"),
+				ExternalParamsList: func() types.List {
+					epObj, _ := types.ObjectValue(
+						map[string]attr.Type{
+							"name": types.StringType, "value": types.StringType,
+							"source": types.StringType, "json_path": types.StringType,
+							"export": types.BoolType, "description": types.StringType,
+						},
+						map[string]attr.Value{
+							"name": types.StringValue("ep1"), "value": types.StringValue(""),
+							"source": types.StringValue("alertmanager"), "json_path": types.StringValue("$.data"),
+							"export": types.BoolValue(false), "description": types.StringValue(""),
+						},
+					)
+					objType := types.ObjectType{AttrTypes: map[string]attr.Type{
+						"name": types.StringType, "value": types.StringType,
+						"source": types.StringType, "json_path": types.StringType,
+						"export": types.BoolType, "description": types.StringType,
+					}}
+					list, _ := types.ListValue(objType, []attr.Value{epObj})
+					return list
+				}(),
+				Data: types.StringValue(`{
+					"external_params": [{"name": "ep2", "source": "api", "json_path": "$.result"}]
+				}`),
+			},
+			expectError: true,
+			errorFields: []string{"external_params_list (conflicts with external_params in data JSON)"},
+		},
+		{
+			name: "external_params_list null with external_params in data JSON — no cross-field error",
+			tfModel: &model.RunbookTFModel{
+				Name: types.StringValue("rb"),
+				ExternalParamsList: types.ListNull(types.ObjectType{AttrTypes: map[string]attr.Type{
+					"name": types.StringType, "value": types.StringType,
+					"source": types.StringType, "json_path": types.StringType,
+					"export": types.BoolType, "description": types.StringType,
+				}}),
+				Data: types.StringValue(`{
+					"external_params": [{"name": "ep1", "source": "api", "json_path": "$.data"}]
+				}`),
+			},
+			expectError: false,
+		},
+		{
 			name: "Set fields conflict",
 			tfModel: &model.RunbookTFModel{
 				AllowedEntities: func() types.List {

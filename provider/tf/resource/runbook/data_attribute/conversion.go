@@ -57,6 +57,10 @@ func convertDataValueToTerraformValue(fieldType reflect.Type, dataValue interfac
 		switch fieldName {
 		case "cells_list":
 			return convertToCellsList(dataValue)
+		case "params_list":
+			return convertToParamsList(dataValue)
+		case "external_params_list":
+			return convertToExternalParamsList(dataValue)
 		default:
 			setValue, err := commonattribute.ConvertToStringList(dataValue)
 			if err != nil {
@@ -121,6 +125,58 @@ func convertToCellsList(value interface{}) (types.List, error) {
 		return types.ListNull(converters.CellsListObjectType), fmt.Errorf("failed to convert cells to cells_list: %s", diags.Errors())
 	}
 	return cellsList, nil
+}
+
+// convertToParamsList converts params from data JSON to a TF params_list.
+func convertToParamsList(value interface{}) (types.List, error) {
+	items, ok := value.([]interface{})
+	if !ok {
+		return types.ListNull(converters.ParamsListObjectType), fmt.Errorf("params field is not an array, got %T", value)
+	}
+
+	params := make([]customattribute.ParamJson, len(items))
+	for i, item := range items {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			return types.ListNull(converters.ParamsListObjectType), fmt.Errorf("param at index %d is not a valid object, got %T", i, item)
+		}
+		b, _ := json.Marshal(m)
+		if err := json.Unmarshal(b, &params[i]); err != nil {
+			return types.ListNull(converters.ParamsListObjectType), fmt.Errorf("param at index %d: %w", i, err)
+		}
+	}
+
+	list, diags := converters.ParamsListFromAPI(params)
+	if diags.HasError() {
+		return types.ListNull(converters.ParamsListObjectType), fmt.Errorf("failed to convert params to params_list: %s", diags.Errors())
+	}
+	return list, nil
+}
+
+// convertToExternalParamsList converts external_params from data JSON to a TF external_params_list.
+func convertToExternalParamsList(value interface{}) (types.List, error) {
+	items, ok := value.([]interface{})
+	if !ok {
+		return types.ListNull(converters.ExternalParamsListObjectType), fmt.Errorf("external_params field is not an array, got %T", value)
+	}
+
+	params := make([]customattribute.ExternalParamJson, len(items))
+	for i, item := range items {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			return types.ListNull(converters.ExternalParamsListObjectType), fmt.Errorf("external_param at index %d is not a valid object, got %T", i, item)
+		}
+		b, _ := json.Marshal(m)
+		if err := json.Unmarshal(b, &params[i]); err != nil {
+			return types.ListNull(converters.ExternalParamsListObjectType), fmt.Errorf("external_param at index %d: %w", i, err)
+		}
+	}
+
+	list, diags := converters.ExternalParamsListFromAPI(params)
+	if diags.HasError() {
+		return types.ListNull(converters.ExternalParamsListObjectType), fmt.Errorf("failed to convert external_params to external_params_list: %s", diags.Errors())
+	}
+	return list, nil
 }
 
 //

@@ -91,7 +91,12 @@ func TestApplyDataModifier(t *testing.T) {
 				assert.Equal(t, true, cellObj.Attributes()["enabled"].(types.Bool).ValueBool())
 				assert.Equal(t, false, cellObj.Attributes()["secret_aware"].(types.Bool).ValueBool())
 
-				assert.Equal(t, result.Params.ValueString(), "[{\"name\":\"p1\",\"value\":\"v1\"}]")
+				assert.False(t, result.ParamsList.IsNull())
+				require.Equal(t, 1, len(result.ParamsList.Elements()))
+				paramObj := result.ParamsList.Elements()[0].(types.Object)
+				assert.Equal(t, "p1", paramObj.Attributes()["name"].(types.String).ValueString())
+				assert.Equal(t, "v1", paramObj.Attributes()["value"].(types.String).ValueString())
+				assert.True(t, result.Params.IsNull(), "deprecated params string should remain null")
 
 				assert.Equal(t, result.AllowedEntities.Elements()[0], types.StringValue("entity1"))
 				assert.Equal(t, result.AllowedEntities.Elements()[1], types.StringValue("entity2"))
@@ -346,7 +351,7 @@ func TestApplyDataModifier_AllFieldTypes(t *testing.T) {
 	assert.Equal(t, result.SecretNames.Elements()[0], types.StringValue("s1"))
 	assert.Equal(t, result.SecretNames.Elements()[1], types.StringValue("s2"))
 
-	// Check JSON fields - cells from data go into cells_list
+	// Check JSON fields - cells from data go into cells_list (not deprecated cells string)
 	assert.False(t, result.CellsList.IsNull())
 	require.Equal(t, 1, len(result.CellsList.Elements()))
 	cellObj := result.CellsList.Elements()[0].(types.Object)
@@ -356,6 +361,19 @@ func TestApplyDataModifier_AllFieldTypes(t *testing.T) {
 	assert.Equal(t, false, cellObj.Attributes()["secret_aware"].(types.Bool).ValueBool())
 	assert.True(t, result.Cells.IsNull(), "cells string should remain null when cells come from data JSON")
 
-	assert.Equal(t, result.Params.ValueString(), "[{\"name\":\"p1\",\"value\":\"v1\"}]")
-	assert.Equal(t, result.ExternalParams.ValueString(), "[{\"name\":\"ep1\",\"source\":\"src\"}]")
+	// params from data go into params_list (not deprecated params string)
+	assert.False(t, result.ParamsList.IsNull())
+	require.Equal(t, 1, len(result.ParamsList.Elements()))
+	paramObj := result.ParamsList.Elements()[0].(types.Object)
+	assert.Equal(t, "p1", paramObj.Attributes()["name"].(types.String).ValueString())
+	assert.Equal(t, "v1", paramObj.Attributes()["value"].(types.String).ValueString())
+	assert.True(t, result.Params.IsNull(), "params string should remain null when params come from data JSON")
+
+	// external_params from data go into external_params_list (not deprecated external_params string)
+	assert.False(t, result.ExternalParamsList.IsNull())
+	require.Equal(t, 1, len(result.ExternalParamsList.Elements()))
+	epObj := result.ExternalParamsList.Elements()[0].(types.Object)
+	assert.Equal(t, "ep1", epObj.Attributes()["name"].(types.String).ValueString())
+	assert.Equal(t, "src", epObj.Attributes()["source"].(types.String).ValueString())
+	assert.True(t, result.ExternalParams.IsNull(), "external_params string should remain null when external_params come from data JSON")
 }

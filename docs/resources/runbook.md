@@ -73,64 +73,64 @@ resource "mcahr_runbook" "full_runbook" {
       op = "delete success"
     }
   ]
-  params = jsonencode([
+  params_list = [
     {
-      "name" : "param_1",
-      "value" : "<default_value>"
+      name  = "param_1"
+      value = "<default_value>"
     },
     {
-      "name" : "param_2",
-      "value" : "<default_value>",
-      "required" : false,
-      "export" : true
+      name     = "param_2"
+      value    = "<default_value>"
+      required = false
+      export   = true
     },
     {
-      "name" : "param_3",
-      "value" : "<default_value>",
-      "export" : true
+      name   = "param_3"
+      value  = "<default_value>"
+      export = true
     },
     {
-      "name" : "param_4",
-      "required" : false
+      name     = "param_4"
+      required = false
     },
     {
-      "name" : "param_5",
-      "required" : false,
-      "description" : "Param #5 description"
+      name        = "param_5"
+      required    = false
+      description = "Param #5 description"
     }
-  ])
-  external_params = jsonencode([
+  ]
+  external_params_list = [
     {
-      "name" : "external_param_1",
-      "source" : "alertmanager",
-      "json_path" : "$.<path>",
-      "export" : true,
-      "value" : "<default_value>"
+      name      = "external_param_1"
+      source    = "alertmanager"
+      json_path = "$.<path>"
+      export    = true
+      value     = "<default_value>"
     },
     {
-      "name" : "external_param_2",
-      "source" : "alertmanager",
-      "json_path" : "$.<path>",
-      "value" : "<default_value>"
+      name      = "external_param_2"
+      source    = "alertmanager"
+      json_path = "$.<path>"
+      value     = "<default_value>"
     },
     {
-      "name" : "external_param_3",
-      "source" : "alertmanager",
-      "json_path" : "$.<path>",
-      "export" : true
+      name      = "external_param_3"
+      source    = "alertmanager"
+      json_path = "$.<path>"
+      export    = true
     },
     {
-      "name" : "external_param_4",
-      "source" : "alertmanager",
-      "json_path" : "$.<path>"
+      name      = "external_param_4"
+      source    = "alertmanager"
+      json_path = "$.<path>"
     },
     {
-      "name" : "external_param_5",
-      "source" : "alertmanager",
-      "json_path" : "$.<path>",
-      "description" : "External parameter #5 description"
+      name        = "external_param_5"
+      source      = "alertmanager"
+      json_path   = "$.<path>"
+      description = "External parameter #5 description"
     }
-  ])
+  ]
   name                                  = "full_runbook"
   description                           = "A sample runbook."
   timeout_ms                            = 5000
@@ -185,13 +185,15 @@ resource "mcahr_runbook" "minimal_runbook" {
 - `description` (String) Description of the runbook
 - `editors` (List of String) List of users who can edit the runbook (with configure permission). Empty maps to all users.
 - `enabled` (Boolean) Whether the runbook is enabled
-- `external_params` (String) Runbook parameters defined via JSON path used to extract the parameter's value from an external payload, encoded as base64 JSON
+- `external_params` (String, Deprecated) Runbook parameters defined via JSON path used to extract the parameter's value from an external payload, encoded as JSON.
+- `external_params_list` (Attributes List) Runbook parameters defined via JSON path used to extract the parameter's value from an external payload, as a native Terraform list. Provides better plan changes and drift detection than the deprecated `external_params` JSON string. Cannot be used together with `external_params`. (see [below for nested schema](#nestedatt--external_params_list))
 - `filter_resource_to_action` (Boolean) Determines whether parameters containing resources are exported to actions
 - `is_run_output_persisted` (Boolean) A boolean value denoting whether or not cell outputs should be persisted when running a runbook
 - `labels` (List of String) A list of strings by which runbooks can be grouped
 - `name` (String) The name of the runbook
-- `params` (String) Named variables to pass to a runbook, encoded as JSON. Shows diffs only when configuration changes.
+- `params` (String, Deprecated) Named variables to pass to a runbook, encoded as JSON. Shows diffs only when configuration changes.
 - `params_groups` (Attributes) Categorized parameter lists. Defaults to null if not specified. (see [below for nested schema](#nestedatt--params_groups))
+- `params_list` (Attributes List) Named variables to pass to a runbook as a native Terraform list. Provides better plan changes and drift detection than the deprecated `params` JSON string. Cannot be used together with `params`. (see [below for nested schema](#nestedatt--params_list))
 - `secret_names` (List of String) A list of strings that contains the name of the secrets that are used in the runbook.
 - `timeout_ms` (Number) Maximum time to wait for runbook execution, in milliseconds
 
@@ -214,6 +216,22 @@ Optional:
 - `secret_aware` (Boolean) Whether the cell is secret-aware.
 
 
+<a id="nestedatt--external_params_list"></a>
+### Nested Schema for `external_params_list`
+
+Required:
+
+- `name` (String) The name of the external parameter.
+- `source` (String) The source of the external parameter.
+
+Optional:
+
+- `description` (String) A description for the external parameter.
+- `export` (Boolean) Whether the parameter value is exported to downstream actions.
+- `json_path` (String) The JSON path used to extract the parameter value from the external payload.
+- `value` (String) The default value of the external parameter.
+
+
 <a id="nestedatt--params_groups"></a>
 ### Nested Schema for `params_groups`
 
@@ -223,3 +241,18 @@ Optional:
 - `external` (List of String) List of external parameter names.
 - `optional` (List of String) List of optional parameter names.
 - `required` (List of String) List of required parameter names.
+
+
+<a id="nestedatt--params_list"></a>
+### Nested Schema for `params_list`
+
+Required:
+
+- `name` (String) The name of the parameter.
+
+Optional:
+
+- `description` (String) A description for the parameter.
+- `export` (Boolean) Whether the parameter value is exported to downstream actions.
+- `required` (Boolean) Whether the parameter is required.
+- `value` (String) The default value of the parameter.

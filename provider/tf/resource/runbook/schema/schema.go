@@ -17,9 +17,11 @@ package schema
 
 import (
 	"terraform/terraform-provider/provider/common/attribute"
+	customattribute "terraform/terraform-provider/provider/external_api/resources/runbooks/custom_attribute"
 	"terraform/terraform-provider/provider/tf/core/plan/modifiers/migration"
 	nulls "terraform/terraform-provider/provider/tf/core/plan/modifiers/null"
 	coreschema "terraform/terraform-provider/provider/tf/core/schema"
+	"terraform/terraform-provider/provider/tf/core/validators"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -125,9 +127,54 @@ func (s *RunbookSchema) GetSchema() schema.Schema {
 
 	builder.AddAttribute("params", schema.StringAttribute{
 		MarkdownDescription: "Named variables to pass to a runbook, encoded as JSON. Shows diffs only when configuration changes.",
+		DeprecationMessage:  "Use params_list instead. The params attribute encodes parameters as a single JSON string, which causes Terraform to show full-string diffs even for small changes. params_list uses native Terraform list types for proper per-element diffs. This attribute will be removed in a future version.",
 		Optional:            true,
 		Computed:            true,
-		Default:             stringdefault.StaticString("[]"),
+		Validators: []validator.String{
+			stringvalidator.ConflictsWith(path.MatchRoot("params_list")),
+		},
+	})
+
+	builder.AddAttribute("params_list", schema.ListNestedAttribute{
+		MarkdownDescription: "Named variables to pass to a runbook as a native Terraform list. Provides better plan changes and drift detection than the deprecated `params` JSON string. Cannot be used together with `params`.",
+		Optional:            true,
+		Computed:            true,
+		PlanModifiers: []planmodifier.List{
+			migration.DefaultListWithDeprecatedConflict(path.MatchRoot("params")),
+		},
+		NestedObject: schema.NestedAttributeObject{
+			Attributes: map[string]schema.Attribute{
+				"name": schema.StringAttribute{
+					MarkdownDescription: "The name of the parameter.",
+					Required:            true,
+					Validators:          []validator.String{validators.NameValidator()},
+				},
+				"value": schema.StringAttribute{
+					MarkdownDescription: "The default value of the parameter.",
+					Optional:            true,
+					Computed:            true,
+					Default:             stringdefault.StaticString(""),
+				},
+				"required": schema.BoolAttribute{
+					MarkdownDescription: "Whether the parameter is required.",
+					Optional:            true,
+					Computed:            true,
+					Default:             booldefault.StaticBool(false),
+				},
+				"export": schema.BoolAttribute{
+					MarkdownDescription: "Whether the parameter value is exported to downstream actions.",
+					Optional:            true,
+					Computed:            true,
+					Default:             booldefault.StaticBool(false),
+				},
+				"description": schema.StringAttribute{
+					MarkdownDescription: "A description for the parameter.",
+					Optional:            true,
+					Computed:            true,
+					Default:             stringdefault.StaticString(""),
+				},
+			},
+		},
 	})
 
 	builder.AddAttribute("params_full", schema.StringAttribute{
@@ -136,10 +183,62 @@ func (s *RunbookSchema) GetSchema() schema.Schema {
 	})
 
 	builder.AddAttribute("external_params", schema.StringAttribute{
-		MarkdownDescription: "Runbook parameters defined via JSON path used to extract the parameter's value from an external payload, encoded as base64 JSON",
+		MarkdownDescription: "Runbook parameters defined via JSON path used to extract the parameter's value from an external payload, encoded as JSON.",
+		DeprecationMessage:  "Use external_params_list instead. The external_params attribute encodes parameters as a single JSON string, which causes Terraform to show full-string diffs even for small changes. external_params_list uses native Terraform list types for proper per-element diffs. This attribute will be removed in a future version.",
 		Optional:            true,
 		Computed:            true,
-		Default:             stringdefault.StaticString("[]"),
+		Validators: []validator.String{
+			stringvalidator.ConflictsWith(path.MatchRoot("external_params_list")),
+		},
+	})
+
+	builder.AddAttribute("external_params_list", schema.ListNestedAttribute{
+		MarkdownDescription: "Runbook parameters defined via JSON path used to extract the parameter's value from an external payload, as a native Terraform list. Provides better plan changes and drift detection than the deprecated `external_params` JSON string. Cannot be used together with `external_params`.",
+		Optional:            true,
+		Computed:            true,
+		PlanModifiers: []planmodifier.List{
+			migration.DefaultListWithDeprecatedConflict(path.MatchRoot("external_params")),
+		},
+		NestedObject: schema.NestedAttributeObject{
+			Attributes: map[string]schema.Attribute{
+				"name": schema.StringAttribute{
+					MarkdownDescription: "The name of the external parameter.",
+					Required:            true,
+					Validators:          []validator.String{validators.NameValidator()},
+				},
+				"value": schema.StringAttribute{
+					MarkdownDescription: "The default value of the external parameter.",
+					Optional:            true,
+					Computed:            true,
+					Default:             stringdefault.StaticString(""),
+				},
+				"source": schema.StringAttribute{
+					MarkdownDescription: "The source of the external parameter.",
+					Required:            true,
+					Validators: []validator.String{
+						stringvalidator.OneOf(customattribute.ValidExternalParamSources...),
+					},
+				},
+				"json_path": schema.StringAttribute{
+					MarkdownDescription: "The JSON path used to extract the parameter value from the external payload.",
+					Optional:            true,
+					Computed:            true,
+					Default:             stringdefault.StaticString(""),
+				},
+				"export": schema.BoolAttribute{
+					MarkdownDescription: "Whether the parameter value is exported to downstream actions.",
+					Optional:            true,
+					Computed:            true,
+					Default:             booldefault.StaticBool(false),
+				},
+				"description": schema.StringAttribute{
+					MarkdownDescription: "A description for the external parameter.",
+					Optional:            true,
+					Computed:            true,
+					Default:             stringdefault.StaticString(""),
+				},
+			},
+		},
 	})
 
 	builder.AddAttribute("external_params_full", schema.StringAttribute{

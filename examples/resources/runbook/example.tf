@@ -29,64 +29,64 @@ resource "mcahr_runbook" "full_runbook" {
       op = "delete success"
     }
   ]
-  params = jsonencode([
+  params_list = [
     {
-      "name" : "param_1",
-      "value" : "<default_value>"
+      name  = "param_1"
+      value = "<default_value>"
     },
     {
-      "name" : "param_2",
-      "value" : "<default_value>",
-      "required" : false,
-      "export" : true
+      name     = "param_2"
+      value    = "<default_value>"
+      required = false
+      export   = true
     },
     {
-      "name" : "param_3",
-      "value" : "<default_value>",
-      "export" : true
+      name   = "param_3"
+      value  = "<default_value>"
+      export = true
     },
     {
-      "name" : "param_4",
-      "required" : false
+      name     = "param_4"
+      required = false
     },
     {
-      "name" : "param_5",
-      "required" : false,
-      "description" : "Param #5 description"
+      name        = "param_5"
+      required    = false
+      description = "Param #5 description"
     }
-  ])
-  external_params = jsonencode([
+  ]
+  external_params_list = [
     {
-      "name" : "external_param_1",
-      "source" : "alertmanager",
-      "json_path" : "$.<path>",
-      "export" : true,
-      "value" : "<default_value>"
+      name      = "external_param_1"
+      source    = "alertmanager"
+      json_path = "$.<path>"
+      export    = true
+      value     = "<default_value>"
     },
     {
-      "name" : "external_param_2",
-      "source" : "alertmanager",
-      "json_path" : "$.<path>",
-      "value" : "<default_value>"
+      name      = "external_param_2"
+      source    = "alertmanager"
+      json_path = "$.<path>"
+      value     = "<default_value>"
     },
     {
-      "name" : "external_param_3",
-      "source" : "alertmanager",
-      "json_path" : "$.<path>",
-      "export" : true
+      name      = "external_param_3"
+      source    = "alertmanager"
+      json_path = "$.<path>"
+      export    = true
     },
     {
-      "name" : "external_param_4",
-      "source" : "alertmanager",
-      "json_path" : "$.<path>"
+      name      = "external_param_4"
+      source    = "alertmanager"
+      json_path = "$.<path>"
     },
     {
-      "name" : "external_param_5",
-      "source" : "alertmanager",
-      "json_path" : "$.<path>",
-      "description" : "External parameter #5 description"
+      name        = "external_param_5"
+      source      = "alertmanager"
+      json_path   = "$.<path>"
+      description = "External parameter #5 description"
     }
-  ])
+  ]
   name                                  = "full_runbook"
   description                           = "A sample runbook."
   timeout_ms                            = 5000

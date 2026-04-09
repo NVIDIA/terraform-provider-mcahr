@@ -71,7 +71,9 @@ func IsDeprecatedAliasTarget(fieldName string) bool {
 // dataFieldAliases maps struct field names to their data JSON equivalents
 // when the names differ (e.g., cells_list in struct → cells in data JSON).
 var dataFieldAliases = map[string]string{
-	"cells_list": "cells",
+	"cells_list":           "cells",
+	"params_list":          "params",
+	"external_params_list": "external_params",
 }
 
 // deprecatedAliasTargets is the reverse of dataFieldAliases — maps deprecated data JSON

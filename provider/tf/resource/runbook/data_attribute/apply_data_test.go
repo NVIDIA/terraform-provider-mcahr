@@ -88,8 +88,14 @@ func TestApplyDataJSONValues(t *testing.T) {
 			},
 			expectError: false,
 			validate: func(t *testing.T, tfModel *model.RunbookTFModel) {
-				assert.True(t, tfModel.Params.ValueString() != "")
-				assert.True(t, tfModel.Cells.IsNull(), "cells string should remain null, data cells go to cells_list")
+				assert.True(t, tfModel.Params.IsNull(), "deprecated params string should remain null")
+				assert.False(t, tfModel.ParamsList.IsNull(), "params from data should populate params_list")
+				require.Equal(t, 1, len(tfModel.ParamsList.Elements()))
+				paramObj := tfModel.ParamsList.Elements()[0].(types.Object)
+				assert.Equal(t, "param1", paramObj.Attributes()["name"].(types.String).ValueString())
+				assert.Equal(t, "value1", paramObj.Attributes()["value"].(types.String).ValueString())
+
+				assert.True(t, tfModel.Cells.IsNull(), "deprecated cells string should remain null")
 				assert.False(t, tfModel.CellsList.IsNull(), "cells from data should populate cells_list")
 				require.Equal(t, 1, len(tfModel.CellsList.Elements()))
 				cellObj := tfModel.CellsList.Elements()[0].(types.Object)
@@ -228,7 +234,8 @@ func TestDataJSONToTFModel(t *testing.T) {
 				assert.Equal(t, true, tfModel.Enabled.ValueBool())
 				assert.Equal(t, "Created from data", tfModel.Description.ValueString())
 				assert.Equal(t, int64(2000), tfModel.TimeoutMs.ValueInt64())
-				assert.False(t, tfModel.Params.IsNull())
+				assert.False(t, tfModel.ParamsList.IsNull(), "params from data should populate params_list")
+				assert.True(t, tfModel.Params.IsNull(), "deprecated params string should remain null")
 			},
 		},
 		{
