@@ -6,29 +6,29 @@ resource "mcahr_runbook" "data_runbook" {
 
 
 resource "mcahr_runbook" "full_runbook" {
-  cells = jsonencode([
+  cells_list = [
     {
-      "md" : "CREATE"
+      md = "CREATE"
     },
     {
-      "op" : "action success = `echo SUCCESS`",
-      "description" : "Creates an action that echoes SUCCESS"
+      op          = "action success = `echo SUCCESS`"
+      description = "Creates an action that echoes SUCCESS"
     },
     {
-      "op" : "enable success"
+      op = "enable success"
     },
     {
-      "op" : "success",
-      "enabled" : false,
-      "description" : "Runs the success action. This cell is disabled."
+      op          = "success"
+      enabled     = false
+      description = "Runs the success action. This cell is disabled."
     },
     {
-      "md" : "CLEANUP"
+      md = "CLEANUP"
     },
     {
-      "op" : "delete success"
+      op = "delete success"
     }
-  ])
+  ]
   params = jsonencode([
     {
       "name" : "param_1",
@@ -115,6 +115,5 @@ resource "mcahr_runbook" "full_runbook" {
 
 
 resource "mcahr_runbook" "minimal_runbook" {
-  name  = "minimal_runbook"
-  cells = jsonencode([])
+  name = "minimal_runbook"
 }

@@ -19,6 +19,8 @@ import (
 	"context"
 	"testing"
 
+	converters "terraform/terraform-provider/provider/tf/resource/runbook/translator/object_converters"
+
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -129,6 +131,7 @@ func TestRunbookTFModel_DeepCopy_EmptyModel(t *testing.T) {
 	assert.True(t, copy.CommunicationWorkspace.IsNull())
 	assert.True(t, copy.CommunicationChannel.IsNull())
 	assert.True(t, copy.Data.IsNull())
+	assert.True(t, copy.CellsList.IsNull())
 
 	// Boolean fields
 	assert.True(t, copy.Enabled.IsNull())
@@ -346,6 +349,7 @@ func TestRunbookTFModel_Copy_AllFieldsPopulated(t *testing.T) {
 		CommunicationWorkspace: types.StringValue("workspace-123"),
 		CommunicationChannel:   types.StringValue("#channel"),
 		Data:                   types.StringValue(`{"metadata":"test"}`),
+		CellsList:              types.ListNull(converters.CellsListObjectType),
 
 		// Boolean fields
 		Enabled:                             types.BoolValue(true),
@@ -386,6 +390,7 @@ func TestRunbookTFModel_Copy_AllFieldsPopulated(t *testing.T) {
 	assert.Equal(t, original.CommunicationWorkspace.ValueString(), copy.CommunicationWorkspace.ValueString())
 	assert.Equal(t, original.CommunicationChannel.ValueString(), copy.CommunicationChannel.ValueString())
 	assert.Equal(t, original.Data.ValueString(), copy.Data.ValueString())
+	assert.True(t, original.CellsList.Equal(copy.CellsList))
 	assert.Equal(t, original.Enabled.ValueBool(), copy.Enabled.ValueBool())
 	assert.Equal(t, original.CommunicationCudNotifications.ValueBool(), copy.CommunicationCudNotifications.ValueBool())
 	assert.Equal(t, original.CommunicationApprovalNotifications.ValueBool(), copy.CommunicationApprovalNotifications.ValueBool())

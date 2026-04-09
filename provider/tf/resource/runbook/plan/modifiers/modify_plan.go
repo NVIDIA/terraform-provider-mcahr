@@ -54,8 +54,10 @@ func ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resou
 
 	handleNullDataFieldPlan(resultValues, &configValues, &planValues, &stateValues)
 
-	// Populate the full JSON attributes with normalized values and defaults
-	err = jsonmodifier.PopulateFullJsonAttributes(ctx, resultValues, &planValues, &stateValues, backendVersion)
+	// Populate the full JSON attributes with normalized values and defaults.
+	// Deprecated JSON fields with active replacements (e.g. cells when cells_list is set)
+	// are automatically skipped and nulled inside PopulateFullJsonAttributes.
+	err = jsonmodifier.PopulateFullJsonAttributes(ctx, resultValues, resultValuesWithoutDefaults, &planValues, &stateValues, backendVersion)
 	if err != nil {
 		resp.Diagnostics.AddError("Error populating full JSON attributes", err.Error())
 		return

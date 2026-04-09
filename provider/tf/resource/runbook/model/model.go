@@ -30,6 +30,7 @@ type RunbookTFModel struct {
 	// Optional fields with complex types
 	Cells     types.String `tfsdk:"cells" json:"cells,omitempty"`
 	CellsFull types.String `tfsdk:"cells_full" json:"cells_full,omitempty"`
+	CellsList types.List   `tfsdk:"cells_list" json:"cells_list,omitempty"`
 
 	Params     types.String `tfsdk:"params" json:"params,omitempty"`
 	ParamsFull types.String `tfsdk:"params_full" json:"params_full,omitempty"`

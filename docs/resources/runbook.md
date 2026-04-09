@@ -50,29 +50,29 @@ resource "mcahr_runbook" "data_runbook" {
 
 
 resource "mcahr_runbook" "full_runbook" {
-  cells = jsonencode([
+  cells_list = [
     {
-      "md" : "CREATE"
+      md = "CREATE"
     },
     {
-      "op" : "action success = `echo SUCCESS`",
-      "description" : "Creates an action that echoes SUCCESS"
+      op          = "action success = `echo SUCCESS`"
+      description = "Creates an action that echoes SUCCESS"
     },
     {
-      "op" : "enable success"
+      op = "enable success"
     },
     {
-      "op" : "success",
-      "enabled" : false,
-      "description" : "Runs the success action. This cell is disabled."
+      op          = "success"
+      enabled     = false
+      description = "Runs the success action. This cell is disabled."
     },
     {
-      "md" : "CLEANUP"
+      md = "CLEANUP"
     },
     {
-      "op" : "delete success"
+      op = "delete success"
     }
-  ])
+  ]
   params = jsonencode([
     {
       "name" : "param_1",
@@ -159,8 +159,7 @@ resource "mcahr_runbook" "full_runbook" {
 
 
 resource "mcahr_runbook" "minimal_runbook" {
-  name  = "minimal_runbook"
-  cells = jsonencode([])
+  name = "minimal_runbook"
 }
 ```
 
@@ -175,7 +174,8 @@ resource "mcahr_runbook" "minimal_runbook" {
 - `allowed_resources_query` (String) The list of resources on which a runbook can run. No restriction, if left empty.
 - `approvers` (List of String) List of users who can approve runbook execution
 - `category` (String) Specifies the category for this runbook. To use categories, make sure your platform administrator has enabled the `ENABLE_RUNBOOK_CATEGORIES` setting. Once enabled, you can organize your runbooks by assigning them a category.
-- `cells` (String) The data cells inside a runbook. Defined as a list of JSON objects encoded in base64. These may be either Markdown or Op commands. Shows diffs only when configuration changes.
+- `cells` (String, Deprecated) The data cells inside a runbook. Defined as a list of JSON objects encoded in base64. These may be either Markdown or Op commands. Shows diffs only when configuration changes.
+- `cells_list` (Attributes List) The data cells inside a runbook as a native Terraform list. Each cell is either a Markdown cell (set `md`) or an Op command cell (set `op`). Only one of `op` or `md` must be set per cell. Provides better plan changes and drift detection than the deprecated `cells` JSON string. Cannot be used together with `cells`. (see [below for nested schema](#nestedatt--cells_list))
 - `communication_approval_notifications` (Boolean) Enables slack notifications for approval operations
 - `communication_channel` (String) A string value denoting the slack channel where notifications related to the runbook should be sent to
 - `communication_cud_notifications` (Boolean) Enables slack notifications for create/update/delete operations
@@ -200,6 +200,19 @@ resource "mcahr_runbook" "minimal_runbook" {
 - `cells_full` (String) Complete cells configuration returned by the API, including server-added fields. Shows diffs when external drift is detected and when configuration changes.
 - `external_params_full` (String) Complete external parameter configuration returned by the API, including server-added fields. Shows diffs when external drift is detected and when configuration changes.
 - `params_full` (String) Complete parameter configuration returned by the API, including server-added fields. Shows diffs when external drift is detected and when configuration changes.
+
+<a id="nestedatt--cells_list"></a>
+### Nested Schema for `cells_list`
+
+Optional:
+
+- `description` (String) A description for the cell.
+- `enabled` (Boolean) Whether the cell is enabled.
+- `md` (String) The Markdown content for this cell. Mutually exclusive with `op`.
+- `name` (String) The name of the cell.
+- `op` (String) The Op command content for this cell. Mutually exclusive with `md`.
+- `secret_aware` (Boolean) Whether the cell is secret-aware.
+
 
 <a id="nestedatt--params_groups"></a>
 ### Nested Schema for `params_groups`

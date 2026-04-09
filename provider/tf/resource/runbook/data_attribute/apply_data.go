@@ -38,7 +38,7 @@ func ApplyDataJSONValues(ctx context.Context, tfModel *runbooktf.RunbookTFModel)
 	err = OnEachStructField(ctx, tfModel,
 		func(snakeCaseFieldName string, fieldValue *reflect.Value) error {
 
-			if IsJSONSkipField(snakeCaseFieldName) {
+			if IsJSONSkipField(snakeCaseFieldName) || IsDeprecatedAliasTarget(snakeCaseFieldName) {
 				return nil
 			}
 
@@ -77,8 +77,9 @@ func DataJSONToTFModel(ctx context.Context, dataJSON types.String) (*runbooktf.R
 // setFieldFromDataJSON applies a single field value from data JSON to the model
 func setFieldFromDataJSON(fieldName string, tfModelValue reflect.Value, dataMap map[string]interface{}) error {
 
-	// Get the value from data JSON
-	dataValueRaw := findValueInMap(fieldName, dataMap)
+	// Get the value from data JSON (using alias for migrated fields like cells_list → cells)
+	dataFieldName := ResolveDataFieldName(fieldName)
+	dataValueRaw := findValueInMap(dataFieldName, dataMap)
 	if dataValueRaw == nil {
 		// Do nothing if field is not present in data JSON
 		return nil

@@ -22,6 +22,7 @@ import (
 	data "terraform/terraform-provider/provider/tf/resource/runbook/data_attribute"
 	"terraform/terraform-provider/provider/tf/resource/runbook/model"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -103,15 +104,13 @@ func TestValidateNoFieldConflicts(t *testing.T) {
 		{
 			name: "JSON fields conflict",
 			tfModel: &model.RunbookTFModel{
-				Cells:  types.StringValue(`[{"op": "print('tf')"}]`),
 				Params: types.StringValue(`[{"name": "p1"}]`),
 				Data: types.StringValue(`{
-					"cells": [{"type": "OP_LANG", "content": "print('data')"}],
 					"params": [{"name": "p2"}]
 				}`),
 			},
 			expectError: true,
-			errorFields: []string{"cells", "params"},
+			errorFields: []string{"params"},
 		},
 		{
 			name: "Skip data and _full fields",
@@ -122,6 +121,94 @@ func TestValidateNoFieldConflicts(t *testing.T) {
 					"cells_full": "test",
 					"params_full": "test",
 					"data": "recursive"
+				}`),
+			},
+			expectError: false,
+		},
+		{
+			name: "cells_list does not conflict with data fields",
+			tfModel: &model.RunbookTFModel{
+				CellsList: func() types.List {
+					cellObj, _ := types.ObjectValue(
+						map[string]attr.Type{
+							"op": types.StringType, "md": types.StringType,
+							"name": types.StringType, "enabled": types.BoolType,
+							"secret_aware": types.BoolType, "description": types.StringType,
+						},
+						map[string]attr.Value{
+							"op": types.StringValue("host"), "md": types.StringNull(),
+							"name": types.StringValue("unnamed"), "enabled": types.BoolValue(true),
+							"secret_aware": types.BoolValue(false), "description": types.StringValue(""),
+						},
+					)
+					objType := types.ObjectType{AttrTypes: map[string]attr.Type{
+						"op": types.StringType, "md": types.StringType,
+						"name": types.StringType, "enabled": types.BoolType,
+						"secret_aware": types.BoolType, "description": types.StringType,
+					}}
+					list, _ := types.ListValue(objType, []attr.Value{cellObj})
+					return list
+				}(),
+				Data: types.StringValue(`{
+					"description": "from data"
+				}`),
+			},
+			expectError: false,
+		},
+		{
+			name: "root cells conflicts with data cells",
+			tfModel: &model.RunbookTFModel{
+				Cells: types.StringValue(`[{"op": "print('tf')"}]`),
+				Data: types.StringValue(`{
+					"cells": [{"type": "OP_LANG", "content": "print('data')"}]
+				}`),
+			},
+			expectError: true,
+			errorFields: []string{"cells"},
+		},
+		{
+			name: "cells_list in root conflicts with cells in data JSON",
+			tfModel: &model.RunbookTFModel{
+				Name: types.StringValue("rb"),
+				CellsList: func() types.List {
+					cellObj, _ := types.ObjectValue(
+						map[string]attr.Type{
+							"op": types.StringType, "md": types.StringType,
+							"name": types.StringType, "enabled": types.BoolType,
+							"secret_aware": types.BoolType, "description": types.StringType,
+						},
+						map[string]attr.Value{
+							"op": types.StringValue("host"), "md": types.StringNull(),
+							"name": types.StringValue("unnamed"), "enabled": types.BoolValue(true),
+							"secret_aware": types.BoolValue(false), "description": types.StringValue(""),
+						},
+					)
+					objType := types.ObjectType{AttrTypes: map[string]attr.Type{
+						"op": types.StringType, "md": types.StringType,
+						"name": types.StringType, "enabled": types.BoolType,
+						"secret_aware": types.BoolType, "description": types.StringType,
+					}}
+					list, _ := types.ListValue(objType, []attr.Value{cellObj})
+					return list
+				}(),
+				Data: types.StringValue(`{
+					"cells": [{"type": "OP_LANG", "content": "print('data')"}]
+				}`),
+			},
+			expectError: true,
+			errorFields: []string{"cells_list (conflicts with cells in data JSON)"},
+		},
+		{
+			name: "cells_list null with cells in data JSON — no cross-field error",
+			tfModel: &model.RunbookTFModel{
+				Name: types.StringValue("rb"),
+				CellsList: types.ListNull(types.ObjectType{AttrTypes: map[string]attr.Type{
+					"op": types.StringType, "md": types.StringType,
+					"name": types.StringType, "enabled": types.BoolType,
+					"secret_aware": types.BoolType, "description": types.StringType,
+				}}),
+				Data: types.StringValue(`{
+					"cells": [{"type": "OP_LANG", "content": "print('data')"}]
 				}`),
 			},
 			expectError: false,

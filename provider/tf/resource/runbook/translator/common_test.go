@@ -25,7 +25,9 @@ import (
 	coretranslator "terraform/terraform-provider/provider/tf/core/translator"
 	"terraform/terraform-provider/provider/tf/resource/runbook/model"
 	"terraform/terraform-provider/provider/tf/resource/runbook/schema"
+	converters "terraform/terraform-provider/provider/tf/resource/runbook/translator/object_converters"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -330,6 +332,43 @@ func TestRunbookTranslatorCommon_BuildRunbookStatement(t *testing.T) {
 			validate: func(t *testing.T, stmt string) {
 				assert.Contains(t, stmt, "allowed_entities=[]")
 				assert.Contains(t, stmt, "approvers=[]")
+			},
+		},
+		{
+			name:          "cells_list path used when set",
+			statementName: "define_notebook",
+			tfModel: func() *model.RunbookTFModel {
+				ctx := context.Background()
+				cellObj, _ := types.ObjectValue(
+					converters.CellsListAttrTypes,
+					map[string]attr.Value{
+						"op": types.StringValue("host | limit 1"), "md": types.StringNull(),
+						"name": types.StringValue("unnamed"), "enabled": types.BoolValue(true),
+						"secret_aware": types.BoolValue(false), "description": types.StringValue(""),
+					},
+				)
+				cellsList, _ := types.ListValue(converters.CellsListObjectType, []attr.Value{cellObj})
+				_ = ctx
+				return &model.RunbookTFModel{
+					Name:               types.StringValue("cells_list_test"),
+					Enabled:            types.BoolValue(true),
+					TimeoutMs:          types.Int64Value(1000),
+					Cells:              types.StringValue("[]"),
+					CellsFull:          types.StringValue("[]"),
+					CellsList:          cellsList,
+					ParamsFull:         types.StringValue("[]"),
+					ExternalParamsFull: types.StringValue("[]"),
+					AllowedEntities:    types.ListNull(types.StringType),
+					Approvers:          types.ListNull(types.StringType),
+					Labels:             types.ListNull(types.StringType),
+					Editors:            types.ListNull(types.StringType),
+					SecretNames:        types.ListNull(types.StringType),
+				}
+			}(),
+			expectError: false,
+			validate: func(t *testing.T, stmt string) {
+				assert.Contains(t, stmt, "cells=")
+				assert.NotContains(t, stmt, `cells="W10="`)
 			},
 		},
 	}

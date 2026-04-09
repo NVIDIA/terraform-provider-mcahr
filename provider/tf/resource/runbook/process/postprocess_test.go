@@ -161,7 +161,7 @@ func TestPostProcessJsonFields_WithInvalidJSON(t *testing.T) {
 
 	// then
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid character")
+	assert.EqualError(t, err, "invalid character 'i' looking for beginning of value")
 }
 
 // TestSetParamsGroups tests the setParamsGroups helper directly.
@@ -282,7 +282,7 @@ func TestRestoreParamsGroupsFromPlan(t *testing.T) {
 				ParamsGroups: apiComputedParamsGroups,
 			}
 
-			err := restoreParamsGroupsFromPlan(requestContext, planGetter, apiModel)
+			err := restoreFieldsFromPlan(requestContext, planGetter, apiModel)
 
 			require.NoError(t, err)
 			if tt.expectNullInModel {
@@ -352,4 +352,70 @@ func TestPostProcessJsonFullField_GenericType(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRestoreBaseFieldsFromState_CellsFullPreservedWhenCellsListActive(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	requestContext := common.NewRequestContext(ctx).WithOperation(common.Read)
+
+	cellObj, _ := types.ObjectValue(
+		converters.CellsListAttrTypes,
+		map[string]attr.Value{
+			"op": types.StringValue("host"), "md": types.StringNull(),
+			"name": types.StringValue("unnamed"), "enabled": types.BoolValue(true),
+			"secret_aware": types.BoolValue(false), "description": types.StringValue(""),
+		},
+	)
+	cellsList, _ := types.ListValue(converters.CellsListObjectType, []attr.Value{cellObj})
+
+	stateGetter := &runbookModelGetter{
+		model: runbooktf.RunbookTFModel{
+			Cells:          types.StringNull(),
+			CellsFull:      types.StringNull(),
+			CellsList:      cellsList,
+			Params:         types.StringValue("[]"),
+			ExternalParams: types.StringValue("[]"),
+		},
+	}
+
+	apiModel := &runbooktf.RunbookTFModel{
+		Cells:     types.StringValue(`[{"op":"host","name":"unnamed","enabled":true}]`),
+		CellsFull: types.StringValue(`[{"op":"host","name":"unnamed","enabled":true}]`),
+		CellsList: cellsList,
+	}
+
+	err := restoreBaseFieldsFromState(requestContext, stateGetter, apiModel)
+
+	require.NoError(t, err)
+	assert.True(t, apiModel.Cells.IsNull(), "cells should be null when cells_list is active")
+	assert.True(t, apiModel.CellsFull.IsNull(), "cells_full should be null when cells_list is active")
+	assert.Equal(t, cellsList, apiModel.CellsList, "cells_list should remain unchanged")
+}
+
+func TestRestoreBaseFieldsFromState_CellsFullNotRestoredWhenCellsPath(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	requestContext := common.NewRequestContext(ctx).WithOperation(common.Read)
+
+	stateGetter := &runbookModelGetter{
+		model: runbooktf.RunbookTFModel{
+			Cells:          types.StringValue(`[{"op":"host"}]`),
+			CellsFull:      types.StringValue(`[{"op":"host","enabled":true,"name":"unnamed"}]`),
+			Params:         types.StringValue("[]"),
+			ExternalParams: types.StringValue("[]"),
+		},
+	}
+
+	apiCellsFull := `[{"op":"host","enabled":true,"name":"unnamed","secret_aware":false}]`
+	apiModel := &runbooktf.RunbookTFModel{
+		Cells:     types.StringValue(`[{"op":"host","enabled":true,"name":"unnamed","secret_aware":false}]`),
+		CellsFull: types.StringValue(apiCellsFull),
+	}
+
+	err := restoreBaseFieldsFromState(requestContext, stateGetter, apiModel)
+
+	require.NoError(t, err)
+	assert.Equal(t, `[{"op":"host"}]`, apiModel.Cells.ValueString(), "cells should be restored from state")
+	assert.Equal(t, apiCellsFull, apiModel.CellsFull.ValueString(), "cells_full should NOT be restored when cells_list is not active (used for drift)")
 }

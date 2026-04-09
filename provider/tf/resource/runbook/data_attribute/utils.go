@@ -59,6 +59,40 @@ func IsJSONSkipField(fieldName string) bool {
 	return strings.HasSuffix(fieldName, "_full") || fieldName == "data"
 }
 
+// IsDeprecatedAliasTarget returns true if the field is a deprecated field that has been
+// replaced by an aliased field (e.g., cells → cells_list). These fields should be skipped
+// during data apply (the replacement reads from the same data JSON key) but NOT during
+// conflict validation (to detect root vs data conflicts on the deprecated field).
+func IsDeprecatedAliasTarget(fieldName string) bool {
+	_, isDeprecated := deprecatedAliasTargets[fieldName]
+	return isDeprecated
+}
+
+// dataFieldAliases maps struct field names to their data JSON equivalents
+// when the names differ (e.g., cells_list in struct → cells in data JSON).
+var dataFieldAliases = map[string]string{
+	"cells_list": "cells",
+}
+
+// deprecatedAliasTargets is the reverse of dataFieldAliases — maps deprecated data JSON
+// field names back to their replacement struct field names. Pre-computed to avoid looping.
+var deprecatedAliasTargets = func() map[string]string {
+	m := make(map[string]string, len(dataFieldAliases))
+	for replacement, deprecated := range dataFieldAliases {
+		m[deprecated] = replacement
+	}
+	return m
+}()
+
+// ResolveDataFieldName returns the data JSON field name for a given struct field name,
+// applying aliases for migrated fields (e.g., cells_list → cells).
+func ResolveDataFieldName(fieldName string) string {
+	if alias, ok := dataFieldAliases[fieldName]; ok {
+		return alias
+	}
+	return fieldName
+}
+
 // OnEachStructField iterates over all fields of the model and calls the fieldFunc for each field
 func OnEachStructField(ctx context.Context, tfModel *runbooktf.RunbookTFModel, fieldFunc func(fieldName string, fieldValue *reflect.Value) error) error {
 	// Use reflection to process all model fields

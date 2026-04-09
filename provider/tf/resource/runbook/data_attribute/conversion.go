@@ -54,11 +54,16 @@ func convertDataValueToTerraformValue(fieldType reflect.Type, dataValue interfac
 		return int64Val, nil
 
 	case types.List:
-		setValue, err := commonattribute.ConvertToStringList(dataValue)
-		if err != nil {
-			return nil, err
+		switch fieldName {
+		case "cells_list":
+			return convertToCellsList(dataValue)
+		default:
+			setValue, err := commonattribute.ConvertToStringList(dataValue)
+			if err != nil {
+				return nil, err
+			}
+			return setValue, nil
 		}
-		return setValue, nil
 
 	case types.Object:
 		switch fieldName {
@@ -82,9 +87,6 @@ func convertToString(value interface{}, fieldName string) (types.String, error) 
 	case string:
 		return types.StringValue(v), nil
 	case map[string]interface{}, []interface{}:
-		if fieldName == "cells" {
-			return convertCellsToInternalModel(v)
-		}
 		if IsJSONField(fieldName) {
 			jsonBytes, err := json.Marshal(v)
 			if err != nil {
@@ -98,33 +100,27 @@ func convertToString(value interface{}, fieldName string) (types.String, error) 
 	}
 }
 
-func convertCellsToInternalModel(inputCells interface{}) (types.String, error) {
-	// cells in the data JSON use the API model of a cell
-	// but in the root terraform TF model
-
-	apiCells, ok := inputCells.([]interface{})
+// convertToCellsList converts cells from data JSON (API format: type/content) to a TF cells_list.
+func convertToCellsList(value interface{}) (types.List, error) {
+	apiCells, ok := value.([]interface{})
 	if !ok {
-		return types.StringNull(), fmt.Errorf("cells field is not an array of objects, got %T", inputCells)
+		return types.ListNull(converters.CellsListObjectType), fmt.Errorf("cells field is not an array, got %T", value)
 	}
 
-	internalCells := make([]customattribute.CellJson, len(apiCells))
+	cellJsonAPIs := make([]customattribute.CellJsonAPI, len(apiCells))
 	for i, cell := range apiCells {
-
-		var cellMap map[string]interface{}
-		if cellMap, ok = cell.(map[string]interface{}); !ok {
-			return types.StringNull(), fmt.Errorf("cell at index %d is not a valid object, got %T", i, cell)
+		cellMap, ok := cell.(map[string]interface{})
+		if !ok {
+			return types.ListNull(converters.CellsListObjectType), fmt.Errorf("cell at index %d is not a valid object, got %T", i, cell)
 		}
-		apiCell := customattribute.CellJsonAPI{}
-		apiCell.SetFromMap(cellMap)
-
-		internalCells[i] = *apiCell.ToInternalModel()
+		cellJsonAPIs[i].SetFromMap(cellMap)
 	}
 
-	marshaledCells, err := json.Marshal(internalCells)
-	if err != nil {
-		return types.StringNull(), err
+	cellsList, diags := converters.CellsListFromAPICells(cellJsonAPIs)
+	if diags.HasError() {
+		return types.ListNull(converters.CellsListObjectType), fmt.Errorf("failed to convert cells to cells_list: %s", diags.Errors())
 	}
-	return types.StringValue(string(marshaledCells)), nil
+	return cellsList, nil
 }
 
 //

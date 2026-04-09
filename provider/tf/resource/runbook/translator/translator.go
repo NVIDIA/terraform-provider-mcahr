@@ -99,6 +99,13 @@ func toTFModelJsonFields(tfModel *runbooktf.RunbookTFModel, cells []customattrib
 	tfModel.Cells = types.StringValue(cellsJson)
 	tfModel.CellsFull = types.StringValue(cellsJson)
 
+	// CellsList
+	cellsList, diags := converters.CellsListFromAPICells(cells)
+	if diags.HasError() {
+		return fmt.Errorf("failed to convert cells to cells_list: %s", diags.Errors())
+	}
+	tfModel.CellsList = cellsList
+
 	// Params
 	paramsJson, err := json.Marshal(params)
 	if err != nil {

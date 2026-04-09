@@ -25,6 +25,7 @@ import (
 	coretranslator "terraform/terraform-provider/provider/tf/core/translator"
 	runbooktf "terraform/terraform-provider/provider/tf/resource/runbook/model"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -131,31 +132,24 @@ func TestRunbookTranslator_ToTFModel(t *testing.T) {
 				assert.Equal(t, true, tfModel.CommunicationExecutionNotifications.ValueBool())
 
 				// Check sets
-				assert.Equal(t, 2, len(tfModel.AllowedEntities.Elements()))
-				allowedEntitiesElements := tfModel.AllowedEntities.Elements()
-				assert.Contains(t, allowedEntitiesElements, types.StringValue("entity1"))
-				assert.Contains(t, allowedEntitiesElements, types.StringValue("entity2"))
-
-				assert.Equal(t, 2, len(tfModel.Approvers.Elements()))
-				approversElements := tfModel.Approvers.Elements()
-				assert.Contains(t, approversElements, types.StringValue("user1"))
-				assert.Contains(t, approversElements, types.StringValue("user2"))
-
-				assert.Equal(t, 2, len(tfModel.Labels.Elements()))
-				labelsElements := tfModel.Labels.Elements()
-				assert.Contains(t, labelsElements, types.StringValue("label1"))
-				assert.Contains(t, labelsElements, types.StringValue("label2"))
-
-				assert.Equal(t, 1, len(tfModel.Editors.Elements()))
-				editorsElements := tfModel.Editors.Elements()
-				assert.Contains(t, editorsElements, types.StringValue("editor1"))
-
-				assert.Equal(t, 1, len(tfModel.SecretNames.Elements()))
-				secretNamesElements := tfModel.SecretNames.Elements()
-				assert.Contains(t, secretNamesElements, types.StringValue("secret1"))
+				assert.Equal(t, []attr.Value{types.StringValue("entity1"), types.StringValue("entity2")}, tfModel.AllowedEntities.Elements())
+				assert.Equal(t, []attr.Value{types.StringValue("user1"), types.StringValue("user2")}, tfModel.Approvers.Elements())
+				assert.Equal(t, []attr.Value{types.StringValue("label1"), types.StringValue("label2")}, tfModel.Labels.Elements())
+				assert.Equal(t, []attr.Value{types.StringValue("editor1")}, tfModel.Editors.Elements())
+				assert.Equal(t, []attr.Value{types.StringValue("secret1")}, tfModel.SecretNames.Elements())
 
 				// Check JSON fields
 				assert.Equal(t, tfModel.Cells.ValueString(), "[{\"description\":\"\",\"enabled\":true,\"name\":\"cell1\",\"op\":\"print('hello')\",\"secret_aware\":false}]")
+				// Check cells_list
+				assert.False(t, tfModel.CellsList.IsNull())
+				require.Equal(t, 1, len(tfModel.CellsList.Elements()))
+				cellObj := tfModel.CellsList.Elements()[0].(types.Object)
+				assert.Equal(t, "print('hello')", cellObj.Attributes()["op"].(types.String).ValueString())
+				assert.Equal(t, "cell1", cellObj.Attributes()["name"].(types.String).ValueString())
+				assert.Equal(t, true, cellObj.Attributes()["enabled"].(types.Bool).ValueBool())
+				assert.Equal(t, false, cellObj.Attributes()["secret_aware"].(types.Bool).ValueBool())
+				assert.Equal(t, "", cellObj.Attributes()["description"].(types.String).ValueString())
+				assert.True(t, cellObj.Attributes()["md"].(types.String).IsNull())
 				assert.Equal(t, tfModel.Params.ValueString(), "[{\"description\":\"\",\"export\":false,\"name\":\"param1\",\"param_type\":\"\",\"required\":false,\"value\":\"value1\"}]")
 				assert.Equal(t, tfModel.ExternalParams.ValueString(), "[{\"description\":\"\",\"export\":false,\"json_path\":\"\",\"name\":\"ext1\",\"param_type\":\"\",\"source\":\"api\",\"value\":\"\"}]")
 			},
@@ -256,6 +250,7 @@ func TestRunbookTranslator_ToTFModel(t *testing.T) {
 				assert.Equal(t, 0, len(tfModel.AllowedEntities.Elements()))
 				assert.Equal(t, 0, len(tfModel.Approvers.Elements()))
 				assert.Equal(t, "[]", tfModel.Cells.ValueString())
+				assert.Equal(t, 0, len(tfModel.CellsList.Elements()))
 				assert.Equal(t, "null", tfModel.Params.ValueString())
 				assert.Equal(t, "[]", tfModel.ExternalParams.ValueString())
 			},
@@ -374,16 +369,24 @@ func TestToTFModelJsonFields(t *testing.T) {
 			expectError: false,
 			validate: func(t *testing.T, tfModel *runbooktf.RunbookTFModel) {
 				// Check cells
-				assert.Contains(t, tfModel.Cells.ValueString(), "op")
-				assert.Contains(t, tfModel.Cells.ValueString(), "print('test')")
+				assert.Equal(t, "[{\"description\":\"\",\"enabled\":false,\"name\":\"cell1\",\"op\":\"print('test')\",\"secret_aware\":false}]", tfModel.Cells.ValueString())
 				assert.Equal(t, tfModel.Cells.ValueString(), tfModel.CellsFull.ValueString())
+				// Check cells_list
+				assert.False(t, tfModel.CellsList.IsNull())
+				require.Equal(t, 1, len(tfModel.CellsList.Elements()))
+				cellObj := tfModel.CellsList.Elements()[0].(types.Object)
+				assert.Equal(t, "print('test')", cellObj.Attributes()["op"].(types.String).ValueString())
+				assert.Equal(t, "cell1", cellObj.Attributes()["name"].(types.String).ValueString())
+				assert.Equal(t, false, cellObj.Attributes()["enabled"].(types.Bool).ValueBool())
+				assert.Equal(t, false, cellObj.Attributes()["secret_aware"].(types.Bool).ValueBool())
+				assert.True(t, cellObj.Attributes()["md"].(types.String).IsNull())
 
 				// Check params
-				assert.Contains(t, tfModel.Params.ValueString(), "param1")
+				assert.Equal(t, "[{\"description\":\"\",\"export\":false,\"name\":\"param1\",\"param_type\":\"\",\"required\":false,\"value\":\"value1\"}]", tfModel.Params.ValueString())
 				assert.Equal(t, tfModel.Params.ValueString(), tfModel.ParamsFull.ValueString())
 
 				// Check external params
-				assert.Contains(t, tfModel.ExternalParams.ValueString(), "ext1")
+				assert.Equal(t, "[{\"description\":\"\",\"export\":false,\"json_path\":\"\",\"name\":\"ext1\",\"param_type\":\"\",\"source\":\"api\",\"value\":\"\"}]", tfModel.ExternalParams.ValueString())
 				assert.Equal(t, tfModel.ExternalParams.ValueString(), tfModel.ExternalParamsFull.ValueString())
 			},
 		},
@@ -395,6 +398,7 @@ func TestToTFModelJsonFields(t *testing.T) {
 			expectError:    false,
 			validate: func(t *testing.T, tfModel *runbooktf.RunbookTFModel) {
 				assert.Equal(t, "[]", tfModel.Cells.ValueString())
+				assert.Equal(t, 0, len(tfModel.CellsList.Elements()))
 				assert.Equal(t, "[]", tfModel.Params.ValueString())
 				assert.Equal(t, "[]", tfModel.ExternalParams.ValueString())
 			},
@@ -407,6 +411,7 @@ func TestToTFModelJsonFields(t *testing.T) {
 			expectError:    false,
 			validate: func(t *testing.T, tfModel *runbooktf.RunbookTFModel) {
 				assert.Equal(t, "[]", tfModel.Cells.ValueString())
+				assert.True(t, tfModel.CellsList.IsNull())
 				assert.Equal(t, "null", tfModel.Params.ValueString())
 				assert.Equal(t, "null", tfModel.ExternalParams.ValueString())
 			},
@@ -432,11 +437,20 @@ func TestToTFModelJsonFields(t *testing.T) {
 			externalParams: []customattribute.ExternalParamJson{},
 			expectError:    false,
 			validate: func(t *testing.T, tfModel *runbooktf.RunbookTFModel) {
-				cellsStr := tfModel.Cells.ValueString()
-				assert.Contains(t, cellsStr, "import os")
-				assert.Contains(t, cellsStr, "# Documentation")
-				assert.Contains(t, cellsStr, "env_cell")
-				assert.Contains(t, cellsStr, "doc_cell")
+				assert.False(t, tfModel.CellsList.IsNull())
+				require.Equal(t, 2, len(tfModel.CellsList.Elements()))
+				cell0 := tfModel.CellsList.Elements()[0].(types.Object)
+				assert.Equal(t, "env_cell", cell0.Attributes()["name"].(types.String).ValueString())
+				assert.Equal(t, "import os\nprint(os.environ)", cell0.Attributes()["op"].(types.String).ValueString())
+				assert.Equal(t, true, cell0.Attributes()["enabled"].(types.Bool).ValueBool())
+				assert.Equal(t, true, cell0.Attributes()["secret_aware"].(types.Bool).ValueBool())
+				assert.True(t, cell0.Attributes()["md"].(types.String).IsNull())
+				cell1 := tfModel.CellsList.Elements()[1].(types.Object)
+				assert.Equal(t, "doc_cell", cell1.Attributes()["name"].(types.String).ValueString())
+				assert.Equal(t, "# Documentation\n\nThis is a **markdown** cell with `code`", cell1.Attributes()["md"].(types.String).ValueString())
+				assert.Equal(t, false, cell1.Attributes()["enabled"].(types.Bool).ValueBool())
+				assert.Equal(t, false, cell1.Attributes()["secret_aware"].(types.Bool).ValueBool())
+				assert.True(t, cell1.Attributes()["op"].(types.String).IsNull())
 			},
 		},
 	}
@@ -579,17 +593,27 @@ func TestRunbookTranslator_CompleteV2Response(t *testing.T) {
 	assert.Equal(t, 3, len(tfModel.Editors.Elements()))
 	assert.Equal(t, 2, len(tfModel.SecretNames.Elements()))
 
-	// Verify JSON fields contain expected content
-	cellsStr := tfModel.Cells.ValueString()
-	assert.Contains(t, cellsStr, "Complex script")
-	assert.Contains(t, cellsStr, "requests.get")
-	assert.Contains(t, cellsStr, "Results")
+	// Verify JSON fields
+	assert.Equal(t, `[{"description":"API call cell","enabled":true,"name":"api_call","op":"# Complex script\nimport requests\nresponse = requests.get('https://api.example.com')\nprint(response.json())","secret_aware":true},{"description":"","enabled":true,"md":"## Results\n\nThe API call above retrieves data from our endpoint.","name":"results_doc","secret_aware":false}]`, tfModel.Cells.ValueString())
 
-	paramsStr := tfModel.Params.ValueString()
-	assert.Contains(t, paramsStr, "api_url")
-	assert.Contains(t, paramsStr, "timeout")
+	// Verify cells_list
+	assert.False(t, tfModel.CellsList.IsNull())
+	require.Equal(t, 2, len(tfModel.CellsList.Elements()))
+	cell0 := tfModel.CellsList.Elements()[0].(types.Object)
+	assert.Equal(t, "api_call", cell0.Attributes()["name"].(types.String).ValueString())
+	assert.Equal(t, "# Complex script\nimport requests\nresponse = requests.get('https://api.example.com')\nprint(response.json())", cell0.Attributes()["op"].(types.String).ValueString())
+	assert.True(t, cell0.Attributes()["md"].(types.String).IsNull())
+	assert.Equal(t, true, cell0.Attributes()["enabled"].(types.Bool).ValueBool())
+	assert.Equal(t, true, cell0.Attributes()["secret_aware"].(types.Bool).ValueBool())
+	assert.Equal(t, "API call cell", cell0.Attributes()["description"].(types.String).ValueString())
+	cell1 := tfModel.CellsList.Elements()[1].(types.Object)
+	assert.Equal(t, "results_doc", cell1.Attributes()["name"].(types.String).ValueString())
+	assert.Equal(t, "## Results\n\nThe API call above retrieves data from our endpoint.", cell1.Attributes()["md"].(types.String).ValueString())
+	assert.True(t, cell1.Attributes()["op"].(types.String).IsNull())
+	assert.Equal(t, true, cell1.Attributes()["enabled"].(types.Bool).ValueBool())
+	assert.Equal(t, false, cell1.Attributes()["secret_aware"].(types.Bool).ValueBool())
+	assert.Equal(t, "", cell1.Attributes()["description"].(types.String).ValueString())
 
-	extParamsStr := tfModel.ExternalParams.ValueString()
-	assert.Contains(t, extParamsStr, "auth_token")
-	assert.Contains(t, extParamsStr, "secrets_manager")
+	assert.Equal(t, `[{"description":"API endpoint URL","export":true,"name":"api_url","param_type":"PARAM","required":true,"value":"https://api.example.com"},{"description":"Request timeout","export":false,"name":"timeout","param_type":"PARAM","required":false,"value":"30"}]`, tfModel.Params.ValueString())
+	assert.Equal(t, `[{"description":"Authentication token","export":false,"json_path":"$.auth.token","name":"auth_token","param_type":"EXTERNAL","source":"secrets_manager","value":""}]`, tfModel.ExternalParams.ValueString())
 }

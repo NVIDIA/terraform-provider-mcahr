@@ -23,6 +23,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
+var validNamePattern = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+
+// IsValidName checks if a string follows entity naming rules:
+// only alphanumeric characters and underscores, starting with a letter or underscore.
+func IsValidName(value string) bool {
+	return validNamePattern.MatchString(value)
+}
+
 // nameValidator validates that a string follows entity naming rules.
 type nameValidator struct{}
 
@@ -50,25 +58,11 @@ func (v nameValidator) ValidateString(ctx context.Context, request validator.Str
 
 	value := request.ConfigValue.ValueString()
 
-	// Check if the string contains only alphanumeric characters and underscores
-	alphanumericPattern := regexp.MustCompile("^[a-zA-Z0-9_]*$")
-	if !alphanumericPattern.MatchString(value) {
+	if !IsValidName(value) {
 		response.Diagnostics.AddAttributeError(
 			request.Path,
 			"Invalid Name Format",
-			fmt.Sprintf("Name must contain only alphanumeric characters and underscores, got: '%s'", value),
+			fmt.Sprintf("Name must contain only alphanumeric characters and underscores, and cannot start with a digit, got: '%s'", value),
 		)
-		return
-	}
-
-	// Check if the string starts with a letter or underscore
-	startsWithLetterOrUnderscore := regexp.MustCompile("^[a-zA-Z_]")
-	if !startsWithLetterOrUnderscore.MatchString(value) {
-		response.Diagnostics.AddAttributeError(
-			request.Path,
-			"Invalid Name Start",
-			fmt.Sprintf("Name must start with a letter or underscore, got: '%s'", value),
-		)
-		return
 	}
 }

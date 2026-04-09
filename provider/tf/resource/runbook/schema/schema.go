@@ -17,10 +17,13 @@ package schema
 
 import (
 	"terraform/terraform-provider/provider/common/attribute"
+	"terraform/terraform-provider/provider/tf/core/plan/modifiers/migration"
 	nulls "terraform/terraform-provider/provider/tf/core/plan/modifiers/null"
 	coreschema "terraform/terraform-provider/provider/tf/core/schema"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
@@ -28,6 +31,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -58,9 +62,60 @@ func (s *RunbookSchema) GetSchema() schema.Schema {
 	// Optional complex data attributes (b64json)
 	builder.AddAttribute("cells", schema.StringAttribute{
 		MarkdownDescription: "The data cells inside a runbook. Defined as a list of JSON objects encoded in base64. These may be either Markdown or Op commands. Shows diffs only when configuration changes.",
+		DeprecationMessage:  "Use cells_list instead. The cells attribute encodes cells as a single JSON string, which causes Terraform to show full-string diffs even for small changes. cells_list uses native Terraform list types for proper per-cell diffs. This attribute will be removed in a future version.",
 		Optional:            true,
 		Computed:            true,
-		Default:             stringdefault.StaticString("[]"),
+		Validators: []validator.String{
+			stringvalidator.ConflictsWith(path.MatchRoot("cells_list")),
+		},
+	})
+
+	builder.AddAttribute("cells_list", schema.ListNestedAttribute{
+		MarkdownDescription: "The data cells inside a runbook as a native Terraform list. Each cell is either a Markdown cell (set `md`) or an Op command cell (set `op`). Only one of `op` or `md` must be set per cell. Provides better plan changes and drift detection than the deprecated `cells` JSON string. Cannot be used together with `cells`.",
+		Optional:            true,
+		Computed:            true,
+		PlanModifiers: []planmodifier.List{
+			migration.DefaultListWithDeprecatedConflict(path.MatchRoot("cells")),
+		},
+		NestedObject: schema.NestedAttributeObject{
+			Attributes: map[string]schema.Attribute{
+				"op": schema.StringAttribute{
+					MarkdownDescription: "The Op command content for this cell. Mutually exclusive with `md`.",
+					Optional:            true,
+					Validators: []validator.String{
+						stringvalidator.ExactlyOneOf(path.MatchRelative().AtParent().AtName("md")),
+					},
+				},
+				"md": schema.StringAttribute{
+					MarkdownDescription: "The Markdown content for this cell. Mutually exclusive with `op`.",
+					Optional:            true,
+				},
+				"name": schema.StringAttribute{
+					MarkdownDescription: "The name of the cell.",
+					Optional:            true,
+					Computed:            true,
+					Default:             stringdefault.StaticString("unnamed"),
+				},
+				"enabled": schema.BoolAttribute{
+					MarkdownDescription: "Whether the cell is enabled.",
+					Optional:            true,
+					Computed:            true,
+					Default:             booldefault.StaticBool(true),
+				},
+				"secret_aware": schema.BoolAttribute{
+					MarkdownDescription: "Whether the cell is secret-aware.",
+					Optional:            true,
+					Computed:            true,
+					Default:             booldefault.StaticBool(false),
+				},
+				"description": schema.StringAttribute{
+					MarkdownDescription: "A description for the cell.",
+					Optional:            true,
+					Computed:            true,
+					Default:             stringdefault.StaticString(""),
+				},
+			},
+		},
 	})
 
 	builder.AddAttribute("cells_full", schema.StringAttribute{

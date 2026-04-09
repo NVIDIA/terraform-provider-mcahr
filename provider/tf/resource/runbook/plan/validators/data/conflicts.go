@@ -27,6 +27,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 )
 
+// crossFieldConflicts maps root config fields to data JSON fields they conflict with
+// (when the names differ). Used for migrated struct fields that replace deprecated JSON fields.
+var crossFieldConflicts = map[string]string{
+	"cells_list": "cells",
+}
+
 // validateNoFieldConflicts validates that fields are set in at most one of the original TF model or data JSON
 func validateNoFieldConflicts(ctx context.Context, originalTFModel *model.RunbookTFModel, dataMap map[string]any) error {
 
@@ -57,10 +63,36 @@ func validateNoFieldConflicts(ctx context.Context, originalTFModel *model.Runboo
 		return fmt.Errorf("failed to validate field conflicts: %w", err)
 	}
 
-	// Return error with all conflicting fields if any found
+	// Check cross-field conflicts (e.g. root cells_list vs data cells)
+	validateCrossFieldConflicts(originalTFModel, dataMap, &conflictingFields)
+
 	if len(conflictingFields) > 0 {
 		return fmt.Errorf("the following fields are set in both the root TF configuration and the data JSON: %s. Each field must be set in at most one location", strings.Join(conflictingFields, ", "))
 	}
 
 	return nil
+}
+
+// validateCrossFieldConflicts checks for conflicts between root config fields and data JSON fields
+// that have different names (e.g. root cells_list vs data cells).
+func validateCrossFieldConflicts(originalTFModel *model.RunbookTFModel, dataMap map[string]any, conflictingFields *[]string) {
+	for rootFieldName, dataFieldName := range crossFieldConflicts {
+		rootValue := getRootFieldValue(originalTFModel, rootFieldName)
+		if rootValue == nil || !common.IsAttrKnown(rootValue) {
+			continue
+		}
+		if data.IsFieldInDataJSON(dataFieldName, dataMap) {
+			*conflictingFields = append(*conflictingFields,
+				fmt.Sprintf("%s (conflicts with %s in data JSON)", rootFieldName, dataFieldName))
+		}
+	}
+}
+
+func getRootFieldValue(m *model.RunbookTFModel, jsonFieldName string) attr.Value {
+	switch jsonFieldName {
+	case "cells_list":
+		return m.CellsList
+	default:
+		return nil
+	}
 }

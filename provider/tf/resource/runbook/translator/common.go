@@ -114,13 +114,25 @@ func (r *RunbookTranslatorCommon) buildRunbookStatement(requestContext *common.R
 	}
 	builder.SetField("params_groups", jsonParamsGroups, "params_groups")
 
-	apiCells, err := customattribute.MapCellsToAPIModel(requestContext, tfModel.Cells.ValueString())
+	apiCells, err := buildCellsForStatement(requestContext, tfModel)
 	if err != nil {
-		return "", fmt.Errorf("failed to map cells to API model: %v", err)
+		return "", fmt.Errorf("failed to build cells for statement: %v", err)
 	}
 	builder.SetField("cells", apiCells, "cells")
 
 	return builder.Build(), nil
+}
+
+func buildCellsForStatement(requestContext *common.RequestContext, tfModel *runbooktf.RunbookTFModel) (string, error) {
+	if !tfModel.CellsList.IsNull() && !tfModel.CellsList.IsUnknown() {
+		internalCells, err := converters.CellsListToInternalCells(requestContext.Context, tfModel.CellsList)
+		if err != nil {
+			return "", fmt.Errorf("failed to convert cells_list to internal model: %v", err)
+		}
+		return customattribute.InternalCellsToBase64APIModel(requestContext, internalCells)
+	}
+
+	return customattribute.MapCellsToAPIModel(requestContext, tfModel.Cells.ValueString())
 }
 
 func buildParamsGroupsJSON(requestContext *common.RequestContext, tfModel *runbooktf.RunbookTFModel) (string, error) {

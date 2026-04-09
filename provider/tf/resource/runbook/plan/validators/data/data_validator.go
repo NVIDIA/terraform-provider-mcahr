@@ -64,4 +64,11 @@ func ApplyDataValidators(ctx context.Context, req resource.ValidateConfigRequest
 		)
 	}
 
+	// Validate data JSON cell structure (type field is required for conversion to op/md)
+	if err := validateDataCells(dataMap); err != nil {
+		resp.Diagnostics.AddError(
+			"Invalid Cell in Data JSON",
+			err.Error(),
+		)
+	}
 }

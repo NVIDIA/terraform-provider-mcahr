@@ -137,6 +137,13 @@ func TestRunbookTranslatorV1_ToTFModel(t *testing.T) {
 				assert.Equal(t, tfModel.Cells.ValueString(), "[{\"description\":\"\",\"enabled\":true,\"name\":\"cell1\",\"op\":\"print('hello')\",\"secret_aware\":false}]")
 				assert.Equal(t, tfModel.Params.ValueString(), "[{\"description\":\"\",\"export\":false,\"name\":\"param1\",\"param_type\":\"\",\"required\":false,\"value\":\"value1\"}]")
 				assert.Equal(t, tfModel.ExternalParams.ValueString(), "[{\"description\":\"\",\"export\":false,\"json_path\":\"\",\"name\":\"ext1\",\"param_type\":\"\",\"source\":\"api\",\"value\":\"\"}]")
+
+				// Check cells_list
+				assert.False(t, tfModel.CellsList.IsNull())
+				require.Equal(t, 1, len(tfModel.CellsList.Elements()))
+				cellObj := tfModel.CellsList.Elements()[0].(types.Object)
+				assert.Equal(t, "print('hello')", cellObj.Attributes()["op"].(types.String).ValueString())
+				assert.Equal(t, "cell1", cellObj.Attributes()["name"].(types.String).ValueString())
 			},
 		},
 		{
@@ -237,6 +244,7 @@ func TestRunbookTranslatorV1_ToTFModel(t *testing.T) {
 				assert.Equal(t, 0, len(tfModel.Approvers.Elements()))
 				assert.Equal(t, "[]", tfModel.Cells.ValueString())
 				assert.Equal(t, "null", tfModel.Params.ValueString())
+				assert.Equal(t, 0, len(tfModel.CellsList.Elements()))
 			},
 		},
 		{
@@ -370,6 +378,14 @@ func TestRunbookTranslatorV1_JSONFieldHandling(t *testing.T) {
 	// Check external params
 	assert.Contains(t, tfModel.ExternalParams.ValueString(), "ext1")
 	assert.Equal(t, tfModel.ExternalParams.ValueString(), tfModel.ExternalParamsFull.ValueString())
+
+	// Check cells_list has both cells
+	assert.False(t, tfModel.CellsList.IsNull())
+	require.Equal(t, 2, len(tfModel.CellsList.Elements()))
+	cell0 := tfModel.CellsList.Elements()[0].(types.Object)
+	assert.Equal(t, "print('op cell')", cell0.Attributes()["op"].(types.String).ValueString())
+	cell1 := tfModel.CellsList.Elements()[1].(types.Object)
+	assert.Equal(t, "# Markdown", cell1.Attributes()["md"].(types.String).ValueString())
 }
 
 func TestRunbookTranslatorV1_GetContainer(t *testing.T) {
@@ -483,4 +499,13 @@ func TestRunbookTranslatorV1_ComplexCellsJSON(t *testing.T) {
 	// Verify cell metadata
 	assert.Contains(t, cellsStr, "json_cell")
 	assert.Contains(t, cellsStr, "complex_md")
+
+	// Verify cells_list
+	assert.False(t, tfModel.CellsList.IsNull())
+	require.Equal(t, 2, len(tfModel.CellsList.Elements()))
+	cellList0 := tfModel.CellsList.Elements()[0].(types.Object)
+	assert.Equal(t, "json_cell", cellList0.Attributes()["name"].(types.String).ValueString())
+	assert.Equal(t, true, cellList0.Attributes()["secret_aware"].(types.Bool).ValueBool())
+	cellList1 := tfModel.CellsList.Elements()[1].(types.Object)
+	assert.Equal(t, false, cellList1.Attributes()["enabled"].(types.Bool).ValueBool())
 }

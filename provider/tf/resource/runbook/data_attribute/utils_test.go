@@ -295,7 +295,7 @@ func TestIsJSONSkipField(t *testing.T) {
 			expected:  true,
 		},
 		{
-			name:      "Regular field not skipped",
+			name:      "cells not skipped (conflict validation needs it)",
 			fieldName: "cells",
 			expected:  false,
 		},

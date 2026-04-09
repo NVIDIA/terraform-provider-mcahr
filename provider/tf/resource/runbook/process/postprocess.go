@@ -33,7 +33,7 @@ type RunbookPostProcessor struct{}
 var _ process.PostProcessor[*runbooktf.RunbookTFModel] = &RunbookPostProcessor{}
 
 func (p *RunbookPostProcessor) PostProcessCreate(requestContext *common.RequestContext, data *process.ProcessData, tfModel *runbooktf.RunbookTFModel) (err error) {
-	return restoreParamsGroupsFromPlan(requestContext, data.CreateRequest.Plan, tfModel)
+	return restoreFieldsFromPlan(requestContext, data.CreateRequest.Plan, tfModel)
 }
 
 func (p *RunbookPostProcessor) PostProcessRead(requestContext *common.RequestContext, data *process.ProcessData, tfModel *runbooktf.RunbookTFModel) (err error) {
@@ -55,7 +55,7 @@ func (p *RunbookPostProcessor) PostProcessRead(requestContext *common.RequestCon
 }
 
 func (p *RunbookPostProcessor) PostProcessUpdate(requestContext *common.RequestContext, data *process.ProcessData, tfModel *runbooktf.RunbookTFModel) (err error) {
-	return restoreParamsGroupsFromPlan(requestContext, data.UpdateRequest.Plan, tfModel)
+	return restoreFieldsFromPlan(requestContext, data.UpdateRequest.Plan, tfModel)
 }
 
 func (p *RunbookPostProcessor) PostProcessDelete(requestContext *common.RequestContext, data *process.ProcessData, tfModel *runbooktf.RunbookTFModel) error {
@@ -106,11 +106,9 @@ func postProcessJsonFullField[T common.JsonConfigurable](fullField *types.String
 	return types.StringValue(overriddenValues), nil
 }
 
-// restoreParamsGroupsFromPlan restores params_groups from a plan or state source to the model.
-// params_groups is set to null by NullObjectIfUnknownModifier when not configured by the user,
-// but the API always computes and returns it. Without explicit restoration, the API value leaks
-// into state, causing "inconsistent result after apply" errors.
-func restoreParamsGroupsFromPlan(requestContext *common.RequestContext, source corecommon.Getter, tfModel *runbooktf.RunbookTFModel) error {
+// restoreFieldsFromPlan restores fields that need explicit handling from the plan.
+// Called for Create/Update operations (after RestoreAllFieldsFromPlan in the orchestrator).
+func restoreFieldsFromPlan(requestContext *common.RequestContext, source corecommon.Getter, tfModel *runbooktf.RunbookTFModel) error {
 
 	var sourceModel runbooktf.RunbookTFModel
 	diags := source.Get(requestContext.Context, &sourceModel)
@@ -118,7 +116,15 @@ func restoreParamsGroupsFromPlan(requestContext *common.RequestContext, source c
 		return fmt.Errorf("failed to get source model: %s", diags.Errors())
 	}
 
+	// params_groups is set to null by NullObjectIfUnknownModifier when not configured by the user,
+	// but the API always computes and returns it. Without explicit restoration, the API value leaks
+	// into state, causing "inconsistent result after apply" errors.
 	setParamsGroups(sourceModel.ParamsGroups, tfModel)
+
+	// Enforce cells mode: the translator populates cells, cells_full, and cells_list from every
+	// API response. Null out the fields that don't belong to the active mode so the plan matches.
+	enforceCellsMode(&sourceModel, tfModel)
+
 	return nil
 }
 
@@ -146,10 +152,30 @@ func restoreBaseFieldsFromState(requestContext *common.RequestContext, source co
 	tfModel.Params = originalModel.Params
 	tfModel.ExternalParams = originalModel.ExternalParams
 
+	// Enforce cells mode: the translator populates all three (cells, cells_full, cells_list)
+	// from every API response. Null out the fields that don't belong to the active mode.
+	enforceCellsMode(&originalModel, tfModel)
+
 	// Restore special feature field
 	tfModel.Data = originalModel.Data
 
 	setParamsGroups(originalModel.ParamsGroups, tfModel)
 
 	return nil
+}
+
+// enforceCellsMode ensures only one cells representation is active in the model.
+// The translator always populates cells, cells_full, and cells_list from the API response.
+// This function nulls out the fields that don't belong to the active mode:
+//   - cells_list mode (source has cells_list set): cells and cells_full stay at "[]"
+//   - cells mode (source has cells_list null): cells_list is set to null
+func enforceCellsMode(source *runbooktf.RunbookTFModel, tfModel *runbooktf.RunbookTFModel) {
+	if common.IsAttrKnown(source.CellsList) {
+		// cells_list mode: cells and cells_full must be null
+		tfModel.Cells = types.StringNull()
+		tfModel.CellsFull = types.StringNull()
+	} else {
+		// cells mode: cells_list must be null
+		tfModel.CellsList = types.ListNull(converters.CellsListObjectType)
+	}
 }

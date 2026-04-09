@@ -58,23 +58,6 @@ func GetInvocationResult(result []reflect.Value) bool {
 	return result[0].Bool()
 }
 
-// AddDefaultsFromPlan copies field values from planValues to resultValues for fields that are null or unknown
-// T should be a struct type that contains Terraform framework types
-func AddDefaultsFromPlan[T any](resultValues *T, planValues *T) {
-	resultValue := reflect.ValueOf(resultValues).Elem()
-	planValue := reflect.ValueOf(planValues).Elem()
-
-	// Iterate through all fields in the struct
-	for i := 0; i < resultValue.NumField(); i++ {
-		resultField := resultValue.Field(i)
-		planField := planValue.Field(i)
-
-		if CheckIfFieldIsNullOrUnknown(resultField) && planField.CanInterface() && resultField.CanSet() {
-			resultField.Set(planField)
-		}
-	}
-}
-
 // GetValues extracts plan, config, and state values from the ModifyPlanRequest
 // T should be a struct type that contains Terraform framework types
 // Returns (doReturn bool, planValues T, configValues T, stateValues T)

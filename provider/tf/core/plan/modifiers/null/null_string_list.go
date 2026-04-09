@@ -45,5 +45,5 @@ func (m nullListIfUnknownModifier) PlanModifyList(ctx context.Context, req planm
 		return
 	}
 
-	resp.PlanValue = types.ListNull(types.StringType)
+	resp.PlanValue = types.ListNull(req.PlanValue.ElementType(ctx))
 }

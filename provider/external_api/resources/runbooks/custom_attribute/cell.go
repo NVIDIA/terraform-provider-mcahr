@@ -264,29 +264,34 @@ func validateOpAndMd(op common.Optional[string], md common.Optional[string]) err
 	return nil
 }
 
-func MapCellsToAPIModel(requestContext *common.RequestContext, encodedCells string) (string, error) {
-
-	var cells []CellJson
-	err := json.Unmarshal([]byte(encodedCells), &cells)
-	if err != nil {
-		return "", err
-	}
-
-	// Convert to API models and set backend version for proper version filtering
+// InternalCellsToBase64APIModel converts internal cell models to a base64-encoded JSON string
+// of API cell models, applying version-aware filtering via CellJsonAPI.MarshalJSON.
+// Used by both the legacy cells JSON path and the new cells_list path.
+func InternalCellsToBase64APIModel(requestContext *common.RequestContext, cells []CellJson) (string, error) {
 	apiModels := make([]CellJsonAPI, len(cells))
 	for i, cell := range cells {
-		// Set backend version on the cell before conversion
 		cell.Config.BackendVersion = requestContext.BackendVersion
 		apiModels[i] = *cell.ToAPIModel()
 	}
 
-	// Marshal will automatically apply version filtering via CellJsonAPI.MarshalJSON
 	marshaledCells, err := json.Marshal(apiModels)
 	if err != nil {
 		return "", err
 	}
 
 	return common.EncodeBase64(string(marshaledCells)), nil
+}
+
+// MapCellsToAPIModel unmarshals a JSON-encoded cells string and converts it to
+// a base64-encoded API model string for use in statements.
+func MapCellsToAPIModel(requestContext *common.RequestContext, encodedCells string) (string, error) {
+	var cells []CellJson
+	err := json.Unmarshal([]byte(encodedCells), &cells)
+	if err != nil {
+		return "", err
+	}
+
+	return InternalCellsToBase64APIModel(requestContext, cells)
 }
 
 func MapCellsToInternalModel(apiCells []CellJsonAPI) (string, error) {

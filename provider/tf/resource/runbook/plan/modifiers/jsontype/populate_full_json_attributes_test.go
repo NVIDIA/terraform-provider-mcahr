@@ -22,6 +22,7 @@ import (
 	"terraform/terraform-provider/provider/common/version"
 	"terraform/terraform-provider/provider/tf/resource/runbook/model"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -158,7 +159,7 @@ func TestPopulateFullJsonAttributes(t *testing.T) {
 			ctx := context.Background()
 
 			// when
-			err := PopulateFullJsonAttributes(ctx, tt.resultValues, tt.plan, tt.state, tt.backendVersion)
+			err := PopulateFullJsonAttributes(ctx, tt.resultValues, tt.resultValues, tt.plan, tt.state, tt.backendVersion)
 
 			// then
 			if tt.expectError {
@@ -367,7 +368,7 @@ func TestPopulateFullJsonAttributes_Integration(t *testing.T) {
 	state := &model.RunbookTFModel{}
 
 	// when
-	err := PopulateFullJsonAttributes(ctx, resultValues, plan, state, backendVersion)
+	err := PopulateFullJsonAttributes(ctx, resultValues, resultValues, plan, state, backendVersion)
 
 	// then
 	require.NoError(t, err)
@@ -389,4 +390,78 @@ func TestPopulateFullJsonAttributes_Integration(t *testing.T) {
 	extParamsFullStr := resultValues.ExternalParamsFull.ValueString()
 	assert.Contains(t, extParamsFullStr, "ext1")
 	assert.Contains(t, extParamsFullStr, "ext2")
+}
+
+func TestShouldSkipForReplacement(t *testing.T) {
+	cellsConfig := JSON_ATTRIBUTES_TO_POPULATE["cells"]
+	paramsConfig := JSON_ATTRIBUTES_TO_POPULATE["params"]
+
+	cellsList := types.ListValueMust(types.StringType, []attr.Value{types.StringValue("cell")})
+
+	t.Run("cells_list active and cells not explicitly set → skip and null", func(t *testing.T) {
+		resultValues := &model.RunbookTFModel{
+			CellsList: cellsList,
+			Cells:     types.StringValue("[]"),
+			CellsFull: types.StringValue("[]"),
+		}
+		resultWithoutDefaults := &model.RunbookTFModel{
+			Cells: types.StringNull(), // not explicitly set
+		}
+		plan := &model.RunbookTFModel{
+			CellsFull: types.StringValue("not_null"),
+		}
+
+		skipped := shouldSkipForReplacement(cellsConfig, resultValues, resultWithoutDefaults, plan)
+
+		assert.True(t, skipped)
+		assert.True(t, resultValues.Cells.IsNull(), "cells should be nulled")
+		assert.True(t, resultValues.CellsFull.IsNull(), "cells_full should be nulled")
+		assert.True(t, plan.CellsFull.IsNull(), "plan cells_full should be nulled")
+	})
+
+	t.Run("cells_list active but cells explicitly set → don't skip (conflict case)", func(t *testing.T) {
+		resultValues := &model.RunbookTFModel{
+			CellsList: cellsList,
+			Cells:     types.StringValue(`[{"op":"test"}]`),
+			CellsFull: types.StringValue("something"),
+		}
+		resultWithoutDefaults := &model.RunbookTFModel{
+			Cells: types.StringValue(`[{"op":"test"}]`), // explicitly set
+		}
+		plan := &model.RunbookTFModel{
+			CellsFull: types.StringValue("not_null"),
+		}
+
+		skipped := shouldSkipForReplacement(cellsConfig, resultValues, resultWithoutDefaults, plan)
+
+		assert.False(t, skipped)
+		assert.False(t, resultValues.Cells.IsNull(), "cells should not be nulled")
+	})
+
+	t.Run("cells_list not active → don't skip", func(t *testing.T) {
+		resultValues := &model.RunbookTFModel{
+			CellsList: types.ListNull(types.StringType),
+			Cells:     types.StringValue(`[{"op":"test"}]`),
+		}
+		resultWithoutDefaults := &model.RunbookTFModel{
+			Cells: types.StringValue(`[{"op":"test"}]`),
+		}
+		plan := &model.RunbookTFModel{}
+
+		skipped := shouldSkipForReplacement(cellsConfig, resultValues, resultWithoutDefaults, plan)
+
+		assert.False(t, skipped)
+	})
+
+	t.Run("no replacement configured → don't skip", func(t *testing.T) {
+		resultValues := &model.RunbookTFModel{
+			Params: types.StringValue(`[{"name":"p1"}]`),
+		}
+		resultWithoutDefaults := &model.RunbookTFModel{}
+		plan := &model.RunbookTFModel{}
+
+		skipped := shouldSkipForReplacement(paramsConfig, resultValues, resultWithoutDefaults, plan)
+
+		assert.False(t, skipped, "params has no replacement yet, should not skip")
+	})
 }

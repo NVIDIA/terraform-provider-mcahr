@@ -108,15 +108,18 @@ func TestConvertDataValueToTerraformValue(t *testing.T) {
 			},
 		},
 		{
-			name:        "Convert cells field",
-			fieldType:   reflect.TypeOf(types.StringNull()),
+			name:        "Convert cells_list field",
+			fieldType:   reflect.TypeOf(types.List{}),
 			dataValue:   []interface{}{map[string]interface{}{"name": "cell1", "type": "OP_LANG", "content": "code"}},
-			fieldName:   "cells",
+			fieldName:   "cells_list",
 			expectError: false,
 			validate: func(t *testing.T, result interface{}) {
-				strVal, ok := result.(types.String)
+				listVal, ok := result.(types.List)
 				require.True(t, ok)
-				assert.Contains(t, strVal.ValueString(), `"op":"code"`)
+				require.Len(t, listVal.Elements(), 1)
+				attrs := listVal.Elements()[0].(types.Object).Attributes()
+				assert.Equal(t, "code", attrs["op"].(types.String).ValueString())
+				assert.Equal(t, "cell1", attrs["name"].(types.String).ValueString())
 			},
 		},
 		{
@@ -222,20 +225,6 @@ func TestConvertToString(t *testing.T) {
 			expected:    `["item1","item2"]`,
 		},
 		{
-			name: "Cells conversion",
-			value: []interface{}{
-				map[string]interface{}{
-					"name":    "test_cell",
-					"type":    "OP_LANG",
-					"content": "print('hello')",
-				},
-			},
-			fieldName:   "cells",
-			expectError: false,
-			// Should contain internal model format with enabled defaulting to true
-			expected: `[{"description":"","enabled":true,"name":"test_cell","op":"print('hello')","secret_aware":false}]`,
-		},
-		{
 			name:        "Non-JSON field with map should error",
 			value:       map[string]interface{}{"key": "value"},
 			fieldName:   "regular_field",
@@ -270,12 +259,12 @@ func TestConvertToString(t *testing.T) {
 	}
 }
 
-func TestConvertCellsToInternalModel(t *testing.T) {
+func TestConvertToCellsList(t *testing.T) {
 	tests := []struct {
 		name        string
 		inputCells  interface{}
 		expectError bool
-		validate    func(t *testing.T, result types.String)
+		validate    func(t *testing.T, result types.List)
 	}{
 		{
 			name: "Valid OP_LANG cells",
@@ -294,11 +283,14 @@ func TestConvertCellsToInternalModel(t *testing.T) {
 				},
 			},
 			expectError: false,
-			validate: func(t *testing.T, result types.String) {
-				assert.Contains(t, result.ValueString(), `"op":"print('test')"`)
-				assert.Contains(t, result.ValueString(), `"op":"print('hello')"`)
-				assert.Contains(t, result.ValueString(), `"name":"cell1"`)
-				assert.Contains(t, result.ValueString(), `"name":"cell2"`)
+			validate: func(t *testing.T, result types.List) {
+				elems := result.Elements()
+				require.Len(t, elems, 2)
+				attrs0 := elems[0].(types.Object).Attributes()
+				assert.Equal(t, "print('test')", attrs0["op"].(types.String).ValueString())
+				assert.Equal(t, "cell1", attrs0["name"].(types.String).ValueString())
+				attrs1 := elems[1].(types.Object).Attributes()
+				assert.False(t, attrs1["enabled"].(types.Bool).ValueBool())
 			},
 		},
 		{
@@ -312,9 +304,12 @@ func TestConvertCellsToInternalModel(t *testing.T) {
 				},
 			},
 			expectError: false,
-			validate: func(t *testing.T, result types.String) {
-				assert.Contains(t, result.ValueString(), `"md":"# Header"`)
-				assert.Contains(t, result.ValueString(), `"name":"md_cell"`)
+			validate: func(t *testing.T, result types.List) {
+				elems := result.Elements()
+				require.Len(t, elems, 1)
+				attrs := elems[0].(types.Object).Attributes()
+				assert.Equal(t, "# Header", attrs["md"].(types.String).ValueString())
+				assert.True(t, attrs["op"].(types.String).IsNull())
 			},
 		},
 		{
@@ -332,9 +327,13 @@ func TestConvertCellsToInternalModel(t *testing.T) {
 				},
 			},
 			expectError: false,
-			validate: func(t *testing.T, result types.String) {
-				assert.Contains(t, result.ValueString(), `"op":"code"`)
-				assert.Contains(t, result.ValueString(), `"md":"text"`)
+			validate: func(t *testing.T, result types.List) {
+				elems := result.Elements()
+				require.Len(t, elems, 2)
+				attrs0 := elems[0].(types.Object).Attributes()
+				assert.Equal(t, "code", attrs0["op"].(types.String).ValueString())
+				attrs1 := elems[1].(types.Object).Attributes()
+				assert.Equal(t, "text", attrs1["md"].(types.String).ValueString())
 			},
 		},
 		{
@@ -353,8 +352,9 @@ func TestConvertCellsToInternalModel(t *testing.T) {
 			name:        "Empty cells array",
 			inputCells:  []interface{}{},
 			expectError: false,
-			validate: func(t *testing.T, result types.String) {
-				assert.Equal(t, "[]", result.ValueString())
+			validate: func(t *testing.T, result types.List) {
+				assert.Equal(t, 0, len(result.Elements()))
+				assert.False(t, result.IsNull())
 			},
 		},
 		{
@@ -367,8 +367,9 @@ func TestConvertCellsToInternalModel(t *testing.T) {
 				},
 			},
 			expectError: false,
-			validate: func(t *testing.T, result types.String) {
-				assert.Contains(t, result.ValueString(), `"op":"print('test')"`)
+			validate: func(t *testing.T, result types.List) {
+				attrs := result.Elements()[0].(types.Object).Attributes()
+				assert.Equal(t, "print('test')", attrs["op"].(types.String).ValueString())
 			},
 		},
 		{
@@ -386,12 +387,13 @@ func TestConvertCellsToInternalModel(t *testing.T) {
 				},
 			},
 			expectError: false,
-			validate: func(t *testing.T, result types.String) {
-				// Verify both cells have enabled=true by default
-				assert.Contains(t, result.ValueString(), `"enabled":true`)
-				// Count occurrences - should appear twice (once for each cell)
-				count := strings.Count(result.ValueString(), `"enabled":true`)
-				assert.Equal(t, 2, count, "Both cells should have enabled=true")
+			validate: func(t *testing.T, result types.List) {
+				elems := result.Elements()
+				require.Len(t, elems, 2)
+				for _, e := range elems {
+					attrs := e.(types.Object).Attributes()
+					assert.True(t, attrs["enabled"].(types.Bool).ValueBool())
+				}
 			},
 		},
 		{
@@ -405,8 +407,9 @@ func TestConvertCellsToInternalModel(t *testing.T) {
 				},
 			},
 			expectError: false,
-			validate: func(t *testing.T, result types.String) {
-				assert.Contains(t, result.ValueString(), `"enabled":false`)
+			validate: func(t *testing.T, result types.List) {
+				attrs := result.Elements()[0].(types.Object).Attributes()
+				assert.False(t, attrs["enabled"].(types.Bool).ValueBool())
 			},
 		},
 	}
@@ -414,7 +417,7 @@ func TestConvertCellsToInternalModel(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// when
-			result, err := convertCellsToInternalModel(tt.inputCells)
+			result, err := convertToCellsList(tt.inputCells)
 
 			// then
 			if tt.expectError {

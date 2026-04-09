@@ -83,8 +83,13 @@ func TestApplyDataModifier(t *testing.T) {
 			},
 			expectError: false,
 			validate: func(t *testing.T, result *model.RunbookTFModel) {
-				assert.False(t, result.Cells.IsNull())
-				assert.Equal(t, result.Cells.ValueString(), "[{\"description\":\"\",\"enabled\":true,\"name\":\"cell1\",\"op\":\"code\",\"secret_aware\":false}]")
+				assert.False(t, result.CellsList.IsNull())
+				require.Equal(t, 1, len(result.CellsList.Elements()))
+				cellObj := result.CellsList.Elements()[0].(types.Object)
+				assert.Equal(t, "code", cellObj.Attributes()["op"].(types.String).ValueString())
+				assert.Equal(t, "cell1", cellObj.Attributes()["name"].(types.String).ValueString())
+				assert.Equal(t, true, cellObj.Attributes()["enabled"].(types.Bool).ValueBool())
+				assert.Equal(t, false, cellObj.Attributes()["secret_aware"].(types.Bool).ValueBool())
 
 				assert.Equal(t, result.Params.ValueString(), "[{\"name\":\"p1\",\"value\":\"v1\"}]")
 
@@ -341,8 +346,16 @@ func TestApplyDataModifier_AllFieldTypes(t *testing.T) {
 	assert.Equal(t, result.SecretNames.Elements()[0], types.StringValue("s1"))
 	assert.Equal(t, result.SecretNames.Elements()[1], types.StringValue("s2"))
 
-	// Check JSON fields
-	assert.Equal(t, result.Cells.ValueString(), "[{\"description\":\"\",\"enabled\":true,\"name\":\"c1\",\"op\":\"code\",\"secret_aware\":false}]")
+	// Check JSON fields - cells from data go into cells_list
+	assert.False(t, result.CellsList.IsNull())
+	require.Equal(t, 1, len(result.CellsList.Elements()))
+	cellObj := result.CellsList.Elements()[0].(types.Object)
+	assert.Equal(t, "code", cellObj.Attributes()["op"].(types.String).ValueString())
+	assert.Equal(t, "c1", cellObj.Attributes()["name"].(types.String).ValueString())
+	assert.Equal(t, true, cellObj.Attributes()["enabled"].(types.Bool).ValueBool())
+	assert.Equal(t, false, cellObj.Attributes()["secret_aware"].(types.Bool).ValueBool())
+	assert.True(t, result.Cells.IsNull(), "cells string should remain null when cells come from data JSON")
+
 	assert.Equal(t, result.Params.ValueString(), "[{\"name\":\"p1\",\"value\":\"v1\"}]")
 	assert.Equal(t, result.ExternalParams.ValueString(), "[{\"name\":\"ep1\",\"source\":\"src\"}]")
 }
