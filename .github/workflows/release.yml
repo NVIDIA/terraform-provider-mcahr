@@ -36,27 +36,34 @@ permissions:
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
-    #runs-on: ubuntu-18.04
     steps:
-      -
-        name: Checkout
+      - name: Validate tag format
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          # Defensive check: only GA tags (vMAJOR.MINOR.PATCH) should ever
+          # reach this workflow. push_tags.yaml on the template repo
+          # already enforces this, but we re-check here in case a tag is
+          # pushed by some other path (manual push, admin override, etc.).
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag '$TAG' is not a strict v<MAJOR>.<MINOR>.<PATCH>; refusing to build."
+            exit 1
+          fi
+          echo "Tag '$TAG' is a valid GA release tag."
+
+      - name: Checkout
         uses: actions/checkout@v4
-      -
-        name: Unshallow
-        run: git fetch --prune --unshallow
-      -
-        name: Debug Info
-        run:  |
-          lsb_release -a || /bin/true
-          apt list --installed | grep gpg || /bin/true
-          pgrep gpg-agent || /bin/true
-          gpgconf --list-dirs agent-ssh-socket || /bin/true
-          ls -al `gpgconf --list-dirs agent-ssh-socket` || /bin/true
-      -
-        name: Set up Go
-        uses: actions/setup-go@v2
+        # Default fetch-depth: 1 is sufficient: goreleaser only uses
+        # .Version / .Commit / .CommitTimestamp (all HEAD-derived) and
+        # `changelog: disable: true` in .goreleaser.yml means no history
+        # walk for release notes. If changelog is ever re-enabled, switch
+        # this to `with: { fetch-depth: 0 }`.
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          go-version: '^1.25.9'
+          go-version: '1.25.9'
+
       -
         name: Import GPG key
         id: import_gpg
@@ -125,9 +132,8 @@ jobs:
           fi
 
           echo "GPG setup complete. GNUPGHOME=$GNUPGHOME"
-      -
-        name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2.8.1
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
         with:
           version: '~> v2'
           args: release --clean
@@ -174,8 +180,6 @@ jobs:
              ls -R .github/
              exit 1
           fi
-          
-          chmod +x "$SCRIPT_PATH"
           
           # Upload to NGC
           # Resource path: nvidian/shoreline/mcahr_terraform_provider
