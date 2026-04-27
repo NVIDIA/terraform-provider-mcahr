@@ -2,7 +2,13 @@ FROM mcr.microsoft.com/vscode/devcontainers/base:ubuntu-22.04
 
 SHELL ["/bin/bash", "-lc"]
 
-RUN apt-get update
+# Upgrade the Docker CLI bundled in the base image (v28.2.2) to a patched
+# version (>= 29.3.1) to fix CVE-2024-41110, CVE-2026-33997, CVE-2026-34040.
+# Relies on the base image having Docker's apt source configured (it does,
+# since this image ships docker-from-docker support).
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends --only-upgrade docker-ce-cli && \
+    rm -rf /var/lib/apt/lists/*
 
 
 USER vscode
