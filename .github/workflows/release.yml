@@ -52,7 +52,7 @@ jobs:
           echo "Tag '$TAG' is a valid GA release tag."
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         # Default fetch-depth: 1 is sufficient: goreleaser only uses
         # .Version / .Commit / .CommitTimestamp (all HEAD-derived) and
         # `changelog: disable: true` in .goreleaser.yml means no history
@@ -60,7 +60,7 @@ jobs:
         # this to `with: { fetch-depth: 0 }`.
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.25.9'
 
@@ -151,7 +151,7 @@ jobs:
           ENV_VARS_NAME_PREFIX: "MCAHR"
 
       - name: Upload Release Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: release-artifacts
           path: dist/
