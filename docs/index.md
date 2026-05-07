@@ -85,6 +85,11 @@ resource "mcahr_bot" "cpu_bot" {
 - `token` (String, Sensitive) Customer/user-specific authorization token for the "NVIDIA Mission Control autonomous hardware recovery" API server. May be provided via `MCAHR_TOKEN` env variable.
 - `url` (String) Customer-specific URL for the "NVIDIA Mission Control autonomous hardware recovery" API server.
 
+## Security considerations
+
+* **Token delivery:** prefer the `NVIDIA MISSION CONTROL AUTONOMOUS HARDWARE RECOVERY_TOKEN` environment variable (read during `Configure`, bypasses state and plan output). Never hardcoded in a provider block or a .tfvars file.
+* **Relayed commands:** `nvidia mission control autonomous hardware recovery_action`, `nvidia mission control autonomous hardware recovery_bot`, and `nvidia mission control autonomous hardware recovery_runbook` send their `command` to the NVIDIA Mission Control autonomous hardware recovery backend for execution on platform-managed agents — vet and pin any imported modules that produce them.
+
 ## Third-Party Software
 
 The NVIDIA Mission Control autonomous hardware recovery Terraform Provider was built using the [Terraform Plugin Framework v1.15.0](https://github.com/hashicorp/terraform-plugin-framework/releases/tag/v1.15.0).
