@@ -15,6 +15,11 @@ For detailed examples, please refer to the content in the [`examples/`](./exampl
 
 Full documentation for available resources and data sources can be found in the [`docs/`](./docs/) directory of this repository.
 
+## Security considerations
+
+* **Token delivery:** prefer the `MCAHR_TOKEN` environment variable (read during `Configure`, bypasses state and plan output). Never hardcoded in a provider block or a .tfvars file.
+* **Relayed commands:** `mcahr_action`, `mcahr_bot`, and `mcahr_runbook` send their `command` to the NVIDIA Mission Control autonomous hardware recovery backend for execution on platform-managed agents — vet and pin any imported modules that produce them.
+
 ## License
 
 This provider is distributed under the Apache 2.0 License. See the [LICENSE](./LICENSE) file for more information.

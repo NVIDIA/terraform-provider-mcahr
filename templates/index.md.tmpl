@@ -31,6 +31,11 @@ The following configuration creates a basic auto-remediation loop within {{ .Ren
 
 {{ .SchemaMarkdown | trimspace }}
 
+## Security considerations
+
+* **Token delivery:** prefer the `{{ .ProviderShortName | upper }}_TOKEN` environment variable (read during `Configure`, bypasses state and plan output). Never hardcoded in a provider block or a .tfvars file.
+* **Relayed commands:** `{{ .ProviderShortName | lower }}_action`, `{{ .ProviderShortName | lower }}_bot`, and `{{ .ProviderShortName | lower }}_runbook` send their `command` to the {{ .RenderedProviderName | trimspace }} backend for execution on platform-managed agents — vet and pin any imported modules that produce them.
+
 ## Third-Party Software
 
 The {{ .RenderedProviderName | trimspace }} Terraform Provider was built using the [Terraform Plugin Framework v1.15.0](https://github.com/hashicorp/terraform-plugin-framework/releases/tag/v1.15.0).
