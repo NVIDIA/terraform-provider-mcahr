@@ -153,7 +153,7 @@ func TestCallExternalAPI_SuccessfulResponseV2(t *testing.T) {
 	}
 	mockClient.On("ExecuteRequest", mock.AnythingOfType("*common.RequestContext"), mock.AnythingOfType("*client.PlatformClientRequest")).Return(platformResp, nil)
 
-	apiObject := &statement.StatementInputAPIModel{
+	apiObject := &statement.InputAPIModel{
 		Statement:  "get_resource(name=\"test-resource\")",
 		APIVersion: common.V2,
 	}
@@ -222,7 +222,7 @@ func TestCallExternalAPI_SuccessfulResponseV1(t *testing.T) {
 	}
 	mockClient.On("ExecuteRequest", mock.AnythingOfType("*common.RequestContext"), mock.AnythingOfType("*client.PlatformClientRequest")).Return(platformResp, nil)
 
-	apiObject := &statement.StatementInputAPIModel{
+	apiObject := &statement.InputAPIModel{
 		Statement:  "operation(param=\"value\")",
 		APIVersion: common.V1,
 	}
@@ -277,7 +277,7 @@ func TestCallExternalAPI_ComplexDataResponseV2(t *testing.T) {
 	}
 	mockClient.On("ExecuteRequest", mock.AnythingOfType("*common.RequestContext"), mock.AnythingOfType("*client.PlatformClientRequest")).Return(platformResp, nil)
 
-	apiObject := &statement.StatementInputAPIModel{
+	apiObject := &statement.InputAPIModel{
 		Statement:  "complex_operation(param=value)",
 		APIVersion: common.V2,
 	}
@@ -325,7 +325,7 @@ func TestCallExternalAPI_BusinessErrorResponseV2(t *testing.T) {
 	}
 	mockClient.On("ExecuteRequest", mock.AnythingOfType("*common.RequestContext"), mock.AnythingOfType("*client.PlatformClientRequest")).Return(platformResp, nil)
 
-	apiObject := &statement.StatementInputAPIModel{
+	apiObject := &statement.InputAPIModel{
 		Statement:  "create_invalid_item(name=\"\")",
 		APIVersion: common.V2,
 	}
@@ -369,7 +369,7 @@ func TestCallExternalAPI_BusinessErrorResponseV1(t *testing.T) {
 	}
 	mockClient.On("ExecuteRequest", mock.AnythingOfType("*common.RequestContext"), mock.AnythingOfType("*client.PlatformClientRequest")).Return(platformResp, nil)
 
-	apiObject := &statement.StatementInputAPIModel{
+	apiObject := &statement.InputAPIModel{
 		Statement:  "create_item(name=\"duplicate-name\")",
 		APIVersion: common.V1,
 	}
@@ -416,7 +416,7 @@ func TestCallExternalAPI_MultipleErrorsResponseV2(t *testing.T) {
 	}
 	mockClient.On("ExecuteRequest", mock.AnythingOfType("*common.RequestContext"), mock.AnythingOfType("*client.PlatformClientRequest")).Return(platformResp, nil)
 
-	apiObject := &statement.StatementInputAPIModel{
+	apiObject := &statement.InputAPIModel{
 		Statement:  "access_restricted_resource()",
 		APIVersion: common.V2,
 	}
@@ -449,7 +449,7 @@ func TestCallExternalAPI_InvalidJSONResponse(t *testing.T) {
 	}
 	mockClient.On("ExecuteRequest", mock.AnythingOfType("*common.RequestContext"), mock.AnythingOfType("*client.PlatformClientRequest")).Return(platformResp, nil)
 
-	apiObject := &statement.StatementInputAPIModel{
+	apiObject := &statement.InputAPIModel{
 		Statement:  "test_operation()",
 		APIVersion: common.V2,
 	}

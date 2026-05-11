@@ -87,6 +87,6 @@ func (r *RunbookTranslatorV1) ToTFModel(requestContext *common.RequestContext, t
 }
 
 // ToAPIModel converts a TF model to an API model for V1 backend
-func (r *RunbookTranslatorV1) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *runbooktf.RunbookTFModel) (*statement.StatementInputAPIModel, error) {
+func (r *RunbookTranslatorV1) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *runbooktf.RunbookTFModel) (*statement.InputAPIModel, error) {
 	return r.ToAPIModelWithVersion(requestContext, translationData, tfModel)
 }

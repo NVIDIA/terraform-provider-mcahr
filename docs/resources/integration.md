@@ -37,9 +37,16 @@ Integration resource for configuring integrations with external services
 - `external_url` (String) The external URL of the integration
 - `idp_name` (String) The IDP name of the integration
 - `jwt_auth_path` (String) The JWT auth path of the integration
+- `max_emails_per_day` (Number) The maximum number of emails allowed per day
+- `max_emails_per_second` (Number) The maximum number of emails allowed per second
 - `namespace` (String) The namespace of the integration
+- `password` (String, Sensitive) The password for SMTP authentication
 - `payload_paths` (List of String) The payload paths of the integration
 - `permissions_user` (String) The permissions user of the integration
 - `role_name` (String) The role name of the integration
+- `sender` (String) The email address to use as the sender
+- `smtp_host` (String) The SMTP server hostname or IP address
+- `smtp_port` (Number) The SMTP server port number
 - `subject` (String) The subject of the integration
 - `tenant_id` (String) The tenant ID of the integration
+- `username` (String) The username for SMTP authentication

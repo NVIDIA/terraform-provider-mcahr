@@ -120,3 +120,15 @@ func IsNil(t any) bool {
 func HasErrorOrNil(err error, pointerVar any) bool {
 	return err != nil || IsNil(pointerVar)
 }
+
+// IsResourceCreatedViaOpStatements returns true if the resource uses statement-based API
+// (e.g., define_action, delete_bot) sent to /api/v1/execute or /api/v1/statements/execute.
+// Returns false for resources that use dedicated REST API endpoints directly.
+func IsResourceCreatedViaOpStatements(resourceType string) bool {
+	switch resourceType {
+	case "smtp_subscription":
+		return false
+	default:
+		return true
+	}
+}

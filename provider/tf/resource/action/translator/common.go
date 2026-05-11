@@ -29,7 +29,7 @@ import (
 type ActionTranslatorCommon struct{}
 
 // ToAPIModelWithVersion converts a TF model to an API model with specified backend version
-func (a *ActionTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *actiontf.ActionTFModel) (*statement.StatementInputAPIModel, error) {
+func (a *ActionTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *actiontf.ActionTFModel) (*statement.InputAPIModel, error) {
 	var stmt string
 
 	switch requestContext.Operation {
@@ -45,7 +45,7 @@ func (a *ActionTranslatorCommon) ToAPIModelWithVersion(requestContext *common.Re
 		return nil, fmt.Errorf("unsupported operation: %v", requestContext.Operation)
 	}
 
-	apiModel := &statement.StatementInputAPIModel{
+	apiModel := &statement.InputAPIModel{
 		Statement:  stmt,
 		APIVersion: requestContext.APIVersion,
 	}

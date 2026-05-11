@@ -32,7 +32,7 @@ import (
 type RunbookTranslatorCommon struct{}
 
 // ToAPIModelWithVersion converts a TF model to an API model with specified backend version
-func (r *RunbookTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *runbooktf.RunbookTFModel) (apiModel *statement.StatementInputAPIModel, err error) {
+func (r *RunbookTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *runbooktf.RunbookTFModel) (apiModel *statement.InputAPIModel, err error) {
 	var stmt string
 
 	switch requestContext.Operation {
@@ -52,7 +52,7 @@ func (r *RunbookTranslatorCommon) ToAPIModelWithVersion(requestContext *common.R
 		return nil, err
 	}
 
-	apiModel = &statement.StatementInputAPIModel{
+	apiModel = &statement.InputAPIModel{
 		Statement:  stmt,
 		APIVersion: requestContext.APIVersion,
 	}

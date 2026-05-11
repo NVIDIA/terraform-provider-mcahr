@@ -108,6 +108,6 @@ func (t *DashboardTranslatorV1) ToTFModel(requestContext *common.RequestContext,
 }
 
 // ToAPIModel converts a TF model to an API model for V1 backend
-func (t *DashboardTranslatorV1) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *dashboardtf.DashboardTFModel) (*statement.StatementInputAPIModel, error) {
+func (t *DashboardTranslatorV1) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *dashboardtf.DashboardTFModel) (*statement.InputAPIModel, error) {
 	return t.ToAPIModelWithVersion(requestContext, translationData, tfModel)
 }

@@ -60,6 +60,7 @@ func (s *IntegrationSchema) GetSchema() schema.Schema {
 	addBcmSchema(builder)
 	addBcmConnectivitySchema(builder)
 	addNvaultSchema(builder)
+	addSmtpSchema(builder)
 
 	return builder.Build()
 }
@@ -320,6 +321,90 @@ func addNvaultSchema(builder *coreschema.SchemaBuilder) {
 
 }
 
+func addSmtpSchema(builder *coreschema.SchemaBuilder) {
+
+	builder.AddAttribute("smtp_host", schema.StringAttribute{
+		MarkdownDescription: "The SMTP server hostname or IP address",
+		Optional:            true,
+		Computed:            true,
+		PlanModifiers: []planmodifier.String{
+			nulls.NullStringIfUnknownModifier(),
+			defaults.EmptyStringModifier(),
+		},
+	})
+
+	builder.AddAttribute("smtp_port", schema.Int64Attribute{
+		MarkdownDescription: "The SMTP server port number",
+		Optional:            true,
+		Computed:            true,
+		PlanModifiers: []planmodifier.Int64{
+			nulls.NullInt64IfUnknownModifier(),
+			defaults.DefaultInt64Modifier(587),
+		},
+		Validators: []validator.Int64{
+			int64validator.Between(1, 65535),
+		},
+	})
+
+	builder.AddAttribute("username", schema.StringAttribute{
+		MarkdownDescription: "The username for SMTP authentication",
+		Optional:            true,
+		Computed:            true,
+		PlanModifiers: []planmodifier.String{
+			nulls.NullStringIfUnknownModifier(),
+			defaults.EmptyStringModifier(),
+		},
+	})
+
+	builder.AddAttribute("password", schema.StringAttribute{
+		MarkdownDescription: "The password for SMTP authentication",
+		Optional:            true,
+		Computed:            true,
+		Sensitive:           true, // Mark as sensitive to prevent logging
+		PlanModifiers: []planmodifier.String{
+			nulls.NullStringIfUnknownModifier(),
+			defaults.EmptyStringModifier(),
+		},
+	})
+
+	builder.AddAttribute("sender", schema.StringAttribute{
+		MarkdownDescription: "The email address to use as the sender",
+		Optional:            true,
+		Computed:            true,
+		PlanModifiers: []planmodifier.String{
+			nulls.NullStringIfUnknownModifier(),
+			defaults.EmptyStringModifier(),
+		},
+	})
+
+	builder.AddAttribute("max_emails_per_day", schema.Int64Attribute{
+		MarkdownDescription: "The maximum number of emails allowed per day",
+		Optional:            true,
+		Computed:            true,
+		PlanModifiers: []planmodifier.Int64{
+			nulls.NullInt64IfUnknownModifier(),
+			defaults.DefaultInt64Modifier(1000),
+		},
+		Validators: []validator.Int64{
+			int64validator.AtLeast(1),
+		},
+	})
+
+	builder.AddAttribute("max_emails_per_second", schema.Int64Attribute{
+		MarkdownDescription: "The maximum number of emails allowed per second",
+		Optional:            true,
+		Computed:            true,
+		PlanModifiers: []planmodifier.Int64{
+			nulls.NullInt64IfUnknownModifier(),
+			defaults.DefaultInt64Modifier(100),
+		},
+		Validators: []validator.Int64{
+			int64validator.AtLeast(1),
+		},
+	})
+
+}
+
 func (s *IntegrationSchema) GetCompatibilityOptions() map[string]attribute.CompatibilityOptions {
 	return map[string]attribute.CompatibilityOptions{
 		"external_url": {
@@ -363,6 +448,27 @@ func (s *IntegrationSchema) GetCompatibilityOptions() map[string]attribute.Compa
 		},
 		"jwt_auth_path": {
 			MinVersion: "release-29.0.0",
+		},
+		"smtp_host": {
+			MinVersion: "release-29.1.21",
+		},
+		"smtp_port": {
+			MinVersion: "release-29.1.21",
+		},
+		"username": {
+			MinVersion: "release-29.1.21",
+		},
+		"password": {
+			MinVersion: "release-29.1.21",
+		},
+		"sender": {
+			MinVersion: "release-29.1.21",
+		},
+		"max_emails_per_day": {
+			MinVersion: "release-29.1.21",
+		},
+		"max_emails_per_second": {
+			MinVersion: "release-29.1.21",
 		},
 	}
 }

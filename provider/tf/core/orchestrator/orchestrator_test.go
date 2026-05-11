@@ -191,12 +191,12 @@ func (m *MockTranslator[TF]) ToTFModel(requestContext *common.RequestContext, tr
 	return args.Get(0).(TF), args.Error(1)
 }
 
-func (m *MockTranslator[TF]) ToAPIModel(requestContext *common.RequestContext, translationData *coretranslator.TranslationData, tfModel TF) (*statement.StatementInputAPIModel, error) {
+func (m *MockTranslator[TF]) ToAPIModel(requestContext *common.RequestContext, translationData *coretranslator.TranslationData, tfModel TF) (*statement.InputAPIModel, error) {
 	args := m.Called(requestContext, translationData, tfModel)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*statement.StatementInputAPIModel), args.Error(1)
+	return args.Get(0).(*statement.InputAPIModel), args.Error(1)
 }
 
 // Helper functions
@@ -275,7 +275,7 @@ func TestOrchestrate_Success(t *testing.T) {
 	mockTranslator := &MockTranslator[*TestTFModel]{}
 
 	testModel := createTestModel()
-	apiInput := &statement.StatementInputAPIModel{Statement: "CREATE ACTION test_action"}
+	apiInput := &statement.InputAPIModel{Statement: "CREATE ACTION test_action"}
 	apiResponse := &actionapi.ActionResponseAPIModel{
 		Output: actionapi.ActionOutput{
 			Configurations: actionapi.ActionConfigurations{
@@ -322,7 +322,7 @@ func TestOrchestrate_Success(t *testing.T) {
 	mockPostProcessor.On("PostProcessCreate", mock.AnythingOfType("*common.RequestContext"), processData, testModel).Return(nil)
 
 	// Mock external API call
-	mockExternalAPI := func(_ *common.RequestContext, _ *client.PlatformClient, apiInput *statement.StatementInputAPIModel) (*actionapi.ActionResponseAPIModel, error) {
+	mockExternalAPI := func(_ *common.RequestContext, _ *client.PlatformClient, apiInput *statement.InputAPIModel) (*actionapi.ActionResponseAPIModel, error) {
 		assert.Equal(t, "CREATE ACTION test_action", apiInput.Statement)
 		return apiResponse, nil
 	}
@@ -373,7 +373,7 @@ func TestOrchestrate_PreProcessorError(t *testing.T) {
 	mockPreProcessor.On("PreProcessCreate", mock.AnythingOfType("*common.RequestContext"), processData).Return((*TestTFModel)(nil), assert.AnError)
 
 	// Mock external API call (won't be called due to preprocessor error)
-	mockExternalAPI := func(_ *common.RequestContext, _ *client.PlatformClient, _ *statement.StatementInputAPIModel) (*actionapi.ActionResponseAPIModel, error) {
+	mockExternalAPI := func(_ *common.RequestContext, _ *client.PlatformClient, _ *statement.InputAPIModel) (*actionapi.ActionResponseAPIModel, error) {
 		return nil, fmt.Errorf("should not be called")
 	}
 
@@ -422,7 +422,7 @@ func TestOrchestrate_TranslatorToAPIError(t *testing.T) {
 	mockTranslator.On("ToAPIModel", mock.AnythingOfType("*common.RequestContext"), mock.AnythingOfType("*translator.TranslationData"), testModel).Return(nil, assert.AnError)
 
 	// Mock external API call (won't be called due to translator error)
-	mockExternalAPI := func(_ *common.RequestContext, _ *client.PlatformClient, _ *statement.StatementInputAPIModel) (*actionapi.ActionResponseAPIModel, error) {
+	mockExternalAPI := func(_ *common.RequestContext, _ *client.PlatformClient, _ *statement.InputAPIModel) (*actionapi.ActionResponseAPIModel, error) {
 		return nil, fmt.Errorf("should not be called")
 	}
 
@@ -467,14 +467,14 @@ func TestOrchestrate_ExternalAPIError(t *testing.T) {
 	mockTranslator := &MockTranslator[*TestTFModel]{}
 
 	testModel := createTestModel()
-	apiInput := &statement.StatementInputAPIModel{Statement: "CREATE ACTION test_action"}
+	apiInput := &statement.InputAPIModel{Statement: "CREATE ACTION test_action"}
 
 	// Set up expectations
 	mockPreProcessor.On("PreProcessCreate", mock.AnythingOfType("*common.RequestContext"), processData).Return(testModel, nil)
 	mockTranslator.On("ToAPIModel", mock.AnythingOfType("*common.RequestContext"), mock.AnythingOfType("*translator.TranslationData"), testModel).Return(apiInput, nil)
 
 	// Mock API to return error
-	mockExternalAPI := func(_ *common.RequestContext, _ *client.PlatformClient, _ *statement.StatementInputAPIModel) (*actionapi.ActionResponseAPIModel, error) {
+	mockExternalAPI := func(_ *common.RequestContext, _ *client.PlatformClient, _ *statement.InputAPIModel) (*actionapi.ActionResponseAPIModel, error) {
 		return nil, assert.AnError
 	}
 
@@ -519,14 +519,14 @@ func TestOrchestrate_APIBusinessError(t *testing.T) {
 	mockTranslator := &MockTranslator[*TestTFModel]{}
 
 	testModel := createTestModel()
-	apiInput := &statement.StatementInputAPIModel{Statement: "CREATE ACTION test_action"}
+	apiInput := &statement.InputAPIModel{Statement: "CREATE ACTION test_action"}
 
 	// Set up expectations
 	mockPreProcessor.On("PreProcessCreate", mock.AnythingOfType("*common.RequestContext"), processData).Return(testModel, nil)
 	mockTranslator.On("ToAPIModel", mock.AnythingOfType("*common.RequestContext"), mock.AnythingOfType("*translator.TranslationData"), testModel).Return(apiInput, nil)
 
 	// Mock API to return business error
-	mockExternalAPI := func(_ *common.RequestContext, _ *client.PlatformClient, _ *statement.StatementInputAPIModel) (*actionapi.ActionResponseAPIModel, error) {
+	mockExternalAPI := func(_ *common.RequestContext, _ *client.PlatformClient, _ *statement.InputAPIModel) (*actionapi.ActionResponseAPIModel, error) {
 		apiResponse := &actionapi.ActionResponseAPIModel{
 			Summary: actionapi.ActionSummary{
 				Status: "error",

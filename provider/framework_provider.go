@@ -37,6 +37,7 @@ import (
 	resourceres "terraform/terraform-provider/provider/tf/resource/resource"
 	"terraform/terraform-provider/provider/tf/resource/runbook"
 	"terraform/terraform-provider/provider/tf/resource/secret"
+	"terraform/terraform-provider/provider/tf/resource/smtp_subscription"
 	"terraform/terraform-provider/provider/tf/resource/system_settings"
 	"terraform/terraform-provider/provider/tf/resource/time_trigger"
 
@@ -162,6 +163,9 @@ func (p *FrameworkProvider) Resources(ctx context.Context) []func() resource.Res
 		},
 		func() resource.Resource {
 			return resourceres.NewResource()
+		},
+		func() resource.Resource {
+			return smtp_subscription.NewSmtpSubscriptionResource()
 		},
 	}
 }

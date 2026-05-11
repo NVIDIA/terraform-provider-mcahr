@@ -29,5 +29,5 @@ type TranslationData struct {
 
 type Translator[TF tfmodel.TFModel, API apimodels.APIModel] interface {
 	ToTFModel(*common.RequestContext, *TranslationData, API) (TF, error)
-	ToAPIModel(*common.RequestContext, *TranslationData, TF) (*statement.StatementInputAPIModel, error)
+	ToAPIModel(*common.RequestContext, *TranslationData, TF) (*statement.InputAPIModel, error)
 }

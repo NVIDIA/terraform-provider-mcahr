@@ -60,6 +60,6 @@ func (t *TimeTriggerTranslator) ToTFModel(requestContext *common.RequestContext,
 }
 
 // ToAPIModel converts a TF model to an API model for V2 backend
-func (t *TimeTriggerTranslator) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *timetriggertf.TimeTriggerTFModel) (*statement.StatementInputAPIModel, error) {
+func (t *TimeTriggerTranslator) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *timetriggertf.TimeTriggerTFModel) (*statement.InputAPIModel, error) {
 	return t.ToAPIModelWithVersion(requestContext, translationData, tfModel)
 }

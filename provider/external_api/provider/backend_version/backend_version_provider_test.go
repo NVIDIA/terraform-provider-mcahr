@@ -17,6 +17,7 @@ package backend_version
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"terraform/terraform-provider/provider/common"
@@ -46,7 +47,8 @@ func TestFetchBackendVersion_SuccessWithMockedAPI(t *testing.T) {
 		"backend_version": "release-30.2.1"
 	}`
 	mockResponse := &client.PlatformClientResponse{
-		Body: []byte(expectedResponse),
+		Response: &http.Response{StatusCode: http.StatusOK},
+		Body:     []byte(expectedResponse),
 	}
 	mockClient.On("ExecuteRequest", mock.Anything).Return(mockResponse, nil)
 
@@ -75,7 +77,8 @@ func TestFetchBackendVersion_ParseError(t *testing.T) {
 		"backend_version": "release-no-numbers"
 	}`
 	mockResponse := &client.PlatformClientResponse{
-		Body: []byte(expectedResponse),
+		Response: &http.Response{StatusCode: http.StatusOK},
+		Body:     []byte(expectedResponse),
 	}
 	mockClient.On("ExecuteRequest", mock.Anything).Return(mockResponse, nil)
 
@@ -99,7 +102,8 @@ func TestFetchBackendVersionWithFallback_ErrorWhenFallbackInvalid(t *testing.T) 
 		"backend_version": "release-no-numbers"
 	}`
 	mockResponse := &client.PlatformClientResponse{
-		Body: []byte(expectedResponse),
+		Response: &http.Response{StatusCode: http.StatusOK},
+		Body:     []byte(expectedResponse),
 	}
 	mockClient.On("ExecuteRequest", mock.Anything).Return(mockResponse, nil)
 
@@ -127,7 +131,8 @@ func TestFetchBackendVersion_SyntaxError(t *testing.T) {
 		}
 	}`
 	mockResponse := &client.PlatformClientResponse{
-		Body: []byte(expectedResponse),
+		Response: &http.Response{StatusCode: http.StatusOK},
+		Body:     []byte(expectedResponse),
 	}
 	mockClient.On("ExecuteRequest", mock.Anything).Return(mockResponse, nil)
 
@@ -156,7 +161,8 @@ func TestFetchBackendVersionWithFallback_DoesNotUseFallbackOnSyntaxError(t *test
 		}
 	}`
 	mockResponse := &client.PlatformClientResponse{
-		Body: []byte(expectedResponse),
+		Response: &http.Response{StatusCode: http.StatusOK},
+		Body:     []byte(expectedResponse),
 	}
 	mockClient.On("ExecuteRequest", mock.Anything).Return(mockResponse, nil)
 
@@ -181,7 +187,8 @@ func TestFetchBackendVersionWithFallback_DoesNotUseFallbackOnSuccess(t *testing.
 		"backend_version": "release-31.0.5"
 	}`
 	mockResponse := &client.PlatformClientResponse{
-		Body: []byte(expectedResponse),
+		Response: &http.Response{StatusCode: http.StatusOK},
+		Body:     []byte(expectedResponse),
 	}
 	mockClient.On("ExecuteRequest", mock.Anything).Return(mockResponse, nil)
 
@@ -211,7 +218,8 @@ func TestFetchBackendVersionWithFallback_UsesFallbackOnlyForParseError(t *testin
 		"backend_version": "release-invalid-numbers"
 	}`
 	mockResponse := &client.PlatformClientResponse{
-		Body: []byte(expectedResponse),
+		Response: &http.Response{StatusCode: http.StatusOK},
+		Body:     []byte(expectedResponse),
 	}
 	mockClient.On("ExecuteRequest", mock.Anything).Return(mockResponse, nil)
 

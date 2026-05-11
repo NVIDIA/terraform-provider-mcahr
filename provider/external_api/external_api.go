@@ -19,6 +19,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
 	"terraform/terraform-provider/provider/common"
 	"terraform/terraform-provider/provider/external_api/client"
 	"terraform/terraform-provider/provider/external_api/resources"
@@ -27,23 +29,29 @@ import (
 
 var v1Endpoint = "/api/v1/execute"
 var v2Endpoint = "/api/v1/statements/execute"
-var METHOD = "POST"
 
 // PlatformClientInterface defines the interface for executing HTTP requests
 type PlatformClientInterface interface {
 	ExecuteRequest(requestContext *common.RequestContext, request *client.PlatformClientRequest) (*client.PlatformClientResponse, error)
 }
 
-func CallExternalAPI[API resources.APIModel](requestContext *common.RequestContext, client *client.PlatformClient, apiObject *statement.StatementInputAPIModel) (API, error) {
+func CallExternalAPI[API resources.APIModel](requestContext *common.RequestContext, client *client.PlatformClient, apiObject *statement.InputAPIModel) (API, error) {
 	return CallExternalAPIWithClient[API](requestContext, client, apiObject)
 }
 
 // CallExternalAPIWithClient calls the external API with a custom client implementation (useful for testing)
-func CallExternalAPIWithClient[API resources.APIModel](requestContext *common.RequestContext, clientInterface PlatformClientInterface, apiObject *statement.StatementInputAPIModel) (API, error) {
-
+func CallExternalAPIWithClient[API resources.APIModel](requestContext *common.RequestContext, clientInterface PlatformClientInterface, apiObject *statement.InputAPIModel) (API, error) {
 	var nilAPI API
+	var request *client.PlatformClientRequest
+	var err error
 
-	request, err := createRequest(apiObject)
+	isResourceCreatedViaOpStatements := common.IsResourceCreatedViaOpStatements(requestContext.ResourceType)
+	if isResourceCreatedViaOpStatements {
+		request, err = createRequestForStatementExecute(apiObject)
+	} else {
+		request, err = createRequestForCustomAPI(requestContext, apiObject)
+	}
+
 	if err != nil {
 		return nilAPI, err
 	}
@@ -58,7 +66,9 @@ func CallExternalAPIWithClient[API resources.APIModel](requestContext *common.Re
 		return nilAPI, err
 	}
 
-	if !common.IsNil(apiResponse) {
+	// Skip error checking only for custom REST resource DELETE operations (they may return 204 NoContent)
+	skipErrorCheck := !isResourceCreatedViaOpStatements && requestContext.Operation == common.Delete
+	if !common.IsNil(apiResponse) && !skipErrorCheck {
 		apiBusinessErrors := apiResponse.GetErrors()
 		if apiBusinessErrors != "" {
 			return nilAPI, fmt.Errorf("API response errors: %s", apiBusinessErrors)
@@ -68,7 +78,7 @@ func CallExternalAPIWithClient[API resources.APIModel](requestContext *common.Re
 	return apiResponse, nil
 }
 
-func createRequest(apiObject *statement.StatementInputAPIModel) (*client.PlatformClientRequest, error) {
+func createRequestForStatementExecute(apiObject *statement.InputAPIModel) (*client.PlatformClientRequest, error) {
 
 	body, err := json.Marshal(apiObject)
 	if err != nil {
@@ -76,32 +86,109 @@ func createRequest(apiObject *statement.StatementInputAPIModel) (*client.Platfor
 	}
 
 	// Select endpoint based on backend version
-	endpoint, err := getEndpoint(apiObject.APIVersion)
+	method, endpoint, err := getMethodAndEndpoint(apiObject.APIVersion)
 	if err != nil {
 		return nil, err
 	}
 
 	return &client.PlatformClientRequest{
-		Method:   METHOD,
+		Method:   method,
 		Endpoint: endpoint,
 		Body:     bytes.NewReader(body),
 	}, nil
 }
 
+func createRequestForCustomAPI(requestContext *common.RequestContext, apiObject *statement.InputAPIModel) (*client.PlatformClientRequest, error) {
+	apiPayload := apiObject.ApiPayload
+	method, endpoint, err := getMethodAndEndpointForCustomAPI(requestContext, apiPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	request := &client.PlatformClientRequest{
+		Method:   method,
+		Endpoint: endpoint,
+	}
+
+	if requestContext.Operation != common.Delete {
+		request.Body = strings.NewReader(apiPayload)
+	}
+
+	return request, nil
+}
+
 // getEndpoint returns the appropriate API endpoint based on the backend version
-func getEndpoint(version common.APIVersion) (string, error) {
+func getMethodAndEndpoint(version common.APIVersion) (string, string, error) {
 	switch version {
 	case common.V1:
-		return v1Endpoint, nil
+		return "POST", v1Endpoint, nil
 	case common.V2:
-		return v2Endpoint, nil
+		return "POST", v2Endpoint, nil
 	default:
-		return "", fmt.Errorf("unknown API version: %v", version)
+		return "", "", fmt.Errorf("unknown API version: %v", version)
+	}
+}
+
+func getMethodAndEndpointForCustomAPI(requestContext *common.RequestContext, apiPayload string) (string, string, error) {
+	var method, endpoint string
+	var err error
+
+	switch requestContext.ResourceType {
+	case "smtp_subscription":
+		endpoint, err = getSmtpSubscriptionEndpoint(requestContext, apiPayload)
+		if err != nil {
+			return "", "", err
+		}
+	default:
+		return "", "", fmt.Errorf("unknown resource type: %v", requestContext.ResourceType)
+	}
+
+	switch requestContext.Operation {
+	case common.Create:
+		method = "POST"
+	case common.Read:
+		method = "GET"
+	case common.Update:
+		method = "PATCH"
+	case common.Delete:
+		method = "DELETE"
+	default:
+		return "", "", fmt.Errorf("unknown operation: %v", requestContext.Operation)
+	}
+
+	return method, endpoint, nil
+}
+
+func getSmtpSubscriptionEndpoint(requestContext *common.RequestContext, apiPayload string) (string, error) {
+	switch requestContext.Operation {
+	case common.Create:
+		return "/api/v1/integrations/smtp/subscriptions", nil
+	case common.Read, common.Update, common.Delete:
+		unmarshaledPayload := make(map[string]interface{})
+		err := json.Unmarshal([]byte(apiPayload), &unmarshaledPayload)
+		if err != nil {
+			return "", fmt.Errorf("failed to unmarshal apiPayload: %w", err)
+		}
+		// if id is not present, return an error
+		if _, ok := unmarshaledPayload["id"]; !ok {
+			return "", fmt.Errorf("id is not present in the apiPayload")
+		}
+		subscriptionID := unmarshaledPayload["id"].(string)
+		return fmt.Sprintf("/api/v1/integrations/smtp/subscriptions/%s", subscriptionID), nil
+	default:
+		return "", fmt.Errorf("unknown operation: %v for resource type: %v", requestContext.Operation, requestContext.ResourceType)
 	}
 }
 
 func processResponse[API resources.APIModel](resp *client.PlatformClientResponse) (API, error) {
 	var apiResponse API
+
+	// If response code is NoContent (204), there is no response body to unmarshal
+	// This typically happens for DELETE operations
+	if resp.Response.StatusCode == http.StatusNoContent || len(resp.Body) == 0 {
+		return apiResponse, nil
+	}
+
 	err := json.Unmarshal(resp.Body, &apiResponse)
 	if err != nil {
 		var nilAPI API // return the zero value of API (which is nil)

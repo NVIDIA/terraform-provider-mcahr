@@ -35,7 +35,7 @@ type SystemSettingsTranslatorV1 struct {
 var _ translator.Translator[*systemsettingstf.SystemSettingsTFModel, *systemsettingsapi.SystemSettingsResponseAPIModelV1] = &SystemSettingsTranslatorV1{}
 
 // ToAPIModel converts a TF model to an API input model for V1
-func (t *SystemSettingsTranslatorV1) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *systemsettingstf.SystemSettingsTFModel) (*statement.StatementInputAPIModel, error) {
+func (t *SystemSettingsTranslatorV1) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *systemsettingstf.SystemSettingsTFModel) (*statement.InputAPIModel, error) {
 	return t.ToAPIModelWithVersion(requestContext, translationData, tfModel)
 }
 

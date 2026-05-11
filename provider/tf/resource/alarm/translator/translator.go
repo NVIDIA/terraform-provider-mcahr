@@ -70,6 +70,6 @@ func (a *AlarmTranslator) ToTFModel(requestContext *common.RequestContext, trans
 }
 
 // ToAPIModel converts a TF model to an API model for V2 backend
-func (a *AlarmTranslator) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *alarmtf.AlarmTFModel) (*statement.StatementInputAPIModel, error) {
+func (a *AlarmTranslator) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *alarmtf.AlarmTFModel) (*statement.InputAPIModel, error) {
 	return a.ToAPIModelWithVersion(requestContext, translationData, tfModel)
 }

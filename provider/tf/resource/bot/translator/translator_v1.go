@@ -72,7 +72,7 @@ func (t *BotTranslatorV1) ToTFModel(requestContext *common.RequestContext, trans
 }
 
 // ToAPIModel converts a TF model to an API model for V1 backend
-func (t *BotTranslatorV1) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *bottf.BotTFModel) (*statement.StatementInputAPIModel, error) {
+func (t *BotTranslatorV1) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *bottf.BotTFModel) (*statement.InputAPIModel, error) {
 	return t.ToAPIModelWithVersion(requestContext, translationData, tfModel)
 }
 

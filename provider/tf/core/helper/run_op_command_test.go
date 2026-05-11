@@ -87,7 +87,7 @@ func TestRunOpCommand_V1_Success(t *testing.T) {
 	// then - Since we can't easily mock the internal HTTP client without major refactoring,
 	// we'll test the error case which is testable
 	// In a real scenario, this would either succeed with a mocked HTTP server or fail with connection error
-	// The important part is that the function correctly constructs the StatementInputAPIModel
+	// The important part is that the function correctly constructs the InputAPIModel
 	if err != nil {
 		// Expected to fail due to no actual server, but we can verify error handling
 		assert.NotNil(t, err)
@@ -117,7 +117,7 @@ func TestRunOpCommand_V2_Success(t *testing.T) {
 }
 
 func TestRunOpCommand_StatementInputCreation(t *testing.T) {
-	// This test verifies that RunOpCommand correctly creates the StatementInputAPIModel
+	// This test verifies that RunOpCommand correctly creates the InputAPIModel
 	// We can't easily test the full flow without mocking internal components,
 	// but we can verify the logic by testing the statement construction
 

@@ -75,6 +75,6 @@ func (t *FileTranslatorV1) ToTFModel(requestContext *common.RequestContext, tran
 }
 
 // ToAPIModel converts a TF model to an API model for V1 backend
-func (t *FileTranslatorV1) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *filetf.FileTFModel) (*statement.StatementInputAPIModel, error) {
+func (t *FileTranslatorV1) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *filetf.FileTFModel) (*statement.InputAPIModel, error) {
 	return t.ToAPIModelWithVersion(requestContext, translationData, tfModel)
 }

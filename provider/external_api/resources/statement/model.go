@@ -17,8 +17,9 @@ package statement
 
 import "terraform/terraform-provider/provider/common"
 
-type StatementInputAPIModel struct {
+type InputAPIModel struct {
 	Statement  string            `json:"statement"`
+	ApiPayload string            `json:"-"` // this is used when the resource cannot be created via op statements (`define_<resource>`, ...)
 	APIVersion common.APIVersion `json:"-"`
 }
 

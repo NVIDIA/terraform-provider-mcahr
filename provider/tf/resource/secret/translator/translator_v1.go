@@ -63,6 +63,6 @@ func (t *NVaultSecretTranslatorV1) ToTFModel(requestContext *common.RequestConte
 }
 
 // ToAPIModel converts a TF model to a V1 API model
-func (t *NVaultSecretTranslatorV1) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *secrettf.NVaultSecretTFModel) (*statement.StatementInputAPIModel, error) {
+func (t *NVaultSecretTranslatorV1) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *secrettf.NVaultSecretTFModel) (*statement.InputAPIModel, error) {
 	return t.ToAPIModelWithVersion(requestContext, translationData, tfModel)
 }

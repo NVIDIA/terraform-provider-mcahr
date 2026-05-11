@@ -64,7 +64,7 @@ func (t *ReportTemplateTranslator) ToTFModel(requestContext *common.RequestConte
 }
 
 // ToAPIModel converts a TF model to an API model for V2 backend
-func (t *ReportTemplateTranslator) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *reporttemplatetf.ReportTemplateTFModel) (*statement.StatementInputAPIModel, error) {
+func (t *ReportTemplateTranslator) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *reporttemplatetf.ReportTemplateTFModel) (*statement.InputAPIModel, error) {
 	return t.ToAPIModelWithVersion(requestContext, translationData, tfModel)
 }
 

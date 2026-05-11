@@ -36,7 +36,7 @@ import (
 var apiV2ThresholdVersion = version.NewBackendVersion("release-29.1.0")
 
 // ExternalAPIFunc represents the external API call function signature
-type ExternalAPIFunc[API api.APIModel] func(*common.RequestContext, *client.PlatformClient, *statement.StatementInputAPIModel) (API, error)
+type ExternalAPIFunc[API api.APIModel] func(*common.RequestContext, *client.PlatformClient, *statement.InputAPIModel) (API, error)
 
 // OrchestrateByAPIVersion provides version-aware orchestration for Terraform resources
 // without maintaining any state. It automatically selects the appropriate translator
