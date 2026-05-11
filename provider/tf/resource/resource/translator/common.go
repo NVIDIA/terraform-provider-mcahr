@@ -28,7 +28,7 @@ import (
 type ResourceTranslatorCommon struct{}
 
 // ToAPIModelWithVersion creates a statement API model for the given TF model and API version
-func (t *ResourceTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *coretranslator.TranslationData, tfModel *model.ResourceTFModel) (*statement.StatementInputAPIModel, error) {
+func (t *ResourceTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *coretranslator.TranslationData, tfModel *model.ResourceTFModel) (*statement.InputAPIModel, error) {
 	var stmt string
 
 	switch requestContext.Operation {
@@ -44,7 +44,7 @@ func (t *ResourceTranslatorCommon) ToAPIModelWithVersion(requestContext *common.
 		return nil, fmt.Errorf("unsupported operation: %v", requestContext.Operation)
 	}
 
-	apiModel := &statement.StatementInputAPIModel{
+	apiModel := &statement.InputAPIModel{
 		Statement:  stmt,
 		APIVersion: requestContext.APIVersion,
 	}

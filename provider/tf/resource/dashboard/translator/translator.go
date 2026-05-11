@@ -102,6 +102,6 @@ func (t *DashboardTranslator) ToTFModel(requestContext *common.RequestContext, t
 }
 
 // ToAPIModel converts the TF model to API model for create operations
-func (t *DashboardTranslator) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *dashboardtf.DashboardTFModel) (*statement.StatementInputAPIModel, error) {
+func (t *DashboardTranslator) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *dashboardtf.DashboardTFModel) (*statement.InputAPIModel, error) {
 	return t.ToAPIModelWithVersion(requestContext, translationData, tfModel)
 }

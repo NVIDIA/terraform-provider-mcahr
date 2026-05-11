@@ -25,7 +25,7 @@ import (
 
 func RunOpCommand[API resources.APIModel](requestContext *common.RequestContext, client *client.PlatformClient, apiVersion common.APIVersion, command string) (API, error) {
 
-	apiRequest := statement.StatementInputAPIModel{
+	apiRequest := statement.InputAPIModel{
 		Statement:  command,
 		APIVersion: apiVersion,
 	}

@@ -41,6 +41,8 @@ func GetIntegrationDataAdapter(serviceName string) adapterinterface.IntegrationD
 		return &integrations.BcmConnectivityDataAdapter{}
 	case "nvault":
 		return &integrations.NvaultDataAdapter{}
+	case "smtp":
+		return &integrations.SmtpDataAdapter{}
 	default:
 		return nil
 	}

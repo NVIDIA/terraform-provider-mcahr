@@ -63,6 +63,15 @@ type IntegrationTFModel struct {
 	Namespace   types.String `tfsdk:"namespace" json:"namespace,omitempty"`
 	RoleName    types.String `tfsdk:"role_name" json:"role_name,omitempty"`
 	JWTAuthPath types.String `tfsdk:"jwt_auth_path" json:"jwt_auth_path,omitempty"`
+
+	// SMTP-specific fields
+	SmtpHost           types.String `tfsdk:"smtp_host" json:"smtp_host,omitempty"`
+	SmtpPort           types.Int64  `tfsdk:"smtp_port" json:"smtp_port,omitempty"`
+	Username           types.String `tfsdk:"username" json:"username,omitempty"`
+	Password           types.String `tfsdk:"password" json:"password,omitempty"`
+	Sender             types.String `tfsdk:"sender" json:"sender,omitempty"`
+	MaxEmailsPerDay    types.Int64  `tfsdk:"max_emails_per_day" json:"max_emails_per_day,omitempty"`
+	MaxEmailsPerSecond types.Int64  `tfsdk:"max_emails_per_second" json:"max_emails_per_second,omitempty"`
 }
 
 // GetName returns the integration name

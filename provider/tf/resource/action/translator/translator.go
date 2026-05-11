@@ -82,7 +82,7 @@ func (a *ActionTranslator) ToTFModel(requestContext *common.RequestContext, tran
 }
 
 // ToAPIModel converts a TF model to an API model for V2 backend
-func (a *ActionTranslator) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *actiontf.ActionTFModel) (*statement.StatementInputAPIModel, error) {
+func (a *ActionTranslator) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *actiontf.ActionTFModel) (*statement.InputAPIModel, error) {
 	return a.ToAPIModelWithVersion(requestContext, translationData, tfModel)
 
 }

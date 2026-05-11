@@ -29,6 +29,9 @@ type RequestContext struct {
 	// ResourceType indicates which resource type initiated this request
 	ResourceType string
 
+	// ResourceName is the name of the resource that initiated this request
+	ResourceName string
+
 	// Operation indicates what CRUD operation is being performed
 	Operation CrudOperation
 
@@ -49,6 +52,12 @@ func NewRequestContext(ctx context.Context) *RequestContext {
 // WithResourceType sets the resource type and returns the RequestContext for chaining
 func (rc *RequestContext) WithResourceType(resourceType string) *RequestContext {
 	rc.ResourceType = resourceType
+	return rc
+}
+
+// WithResourceName sets the resource name and returns the RequestContext for chaining
+func (rc *RequestContext) WithResourceName(resourceName string) *RequestContext {
+	rc.ResourceName = resourceName
 	return rc
 }
 

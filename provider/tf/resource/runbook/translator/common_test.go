@@ -45,7 +45,7 @@ func TestRunbookTranslatorCommon_ToAPIModelWithVersion(t *testing.T) {
 		backendVersion *version.BackendVersion
 		apiVersion     common.APIVersion
 		expectError    bool
-		validate       func(t *testing.T, apiModel *statement.StatementInputAPIModel)
+		validate       func(t *testing.T, apiModel *statement.InputAPIModel)
 	}{
 		{
 			name: "Create operation",
@@ -62,7 +62,7 @@ func TestRunbookTranslatorCommon_ToAPIModelWithVersion(t *testing.T) {
 			backendVersion: version.NewBackendVersion("release-29.0.0"),
 			apiVersion:     common.V1,
 			expectError:    false,
-			validate: func(t *testing.T, apiModel *statement.StatementInputAPIModel) {
+			validate: func(t *testing.T, apiModel *statement.InputAPIModel) {
 				assert.Equal(t, "define_notebook(notebook_name=\"test_runbook\", enabled=false, timeout_ms=0, description=\"\", allowed_resources_query=\"\", communication_workspace=\"\", communication_channel=\"\", is_run_output_persisted=false, filter_resource_to_action=false, communication_cud_notifications=false, communication_approval_notifications=false, communication_execution_notifications=false, allowed_entities=[], approvers=[], labels=[], editors=[], secret_names=[], cells=\"W3siY29udGVudCI6InByaW50KCd0ZXN0JykiLCJlbmFibGVkIjp0cnVlLCJuYW1lIjoiY2VsbDEiLCJzZWNyZXRfYXdhcmUiOmZhbHNlLCJ0eXBlIjoiT1BfTEFORyJ9XQ==\", params=, external_params=)", apiModel.Statement)
 				assert.Equal(t, common.V1, apiModel.APIVersion)
 			},
@@ -81,7 +81,7 @@ func TestRunbookTranslatorCommon_ToAPIModelWithVersion(t *testing.T) {
 			backendVersion: version.NewBackendVersion("release-29.1.0"),
 			apiVersion:     common.V2,
 			expectError:    false,
-			validate: func(t *testing.T, apiModel *statement.StatementInputAPIModel) {
+			validate: func(t *testing.T, apiModel *statement.InputAPIModel) {
 				assert.Equal(t, `get_notebook_class(notebook_name="test_runbook")`, apiModel.Statement)
 				assert.Equal(t, common.V2, apiModel.APIVersion)
 			},
@@ -101,7 +101,7 @@ func TestRunbookTranslatorCommon_ToAPIModelWithVersion(t *testing.T) {
 			backendVersion: version.NewBackendVersion("release-29.0.0"),
 			apiVersion:     common.V1,
 			expectError:    false,
-			validate: func(t *testing.T, apiModel *statement.StatementInputAPIModel) {
+			validate: func(t *testing.T, apiModel *statement.InputAPIModel) {
 				assert.Equal(t, "update_notebook(notebook_name=\"test_runbook\", enabled=false, timeout_ms=0, description=\"\", allowed_resources_query=\"\", communication_workspace=\"\", communication_channel=\"\", is_run_output_persisted=false, filter_resource_to_action=false, communication_cud_notifications=false, communication_approval_notifications=false, communication_execution_notifications=false, allowed_entities=[], approvers=[], labels=[], editors=[], secret_names=[], cells=\"W3siY29udGVudCI6InByaW50KCd0ZXN0JykiLCJlbmFibGVkIjp0cnVlLCJuYW1lIjoiY2VsbDEiLCJzZWNyZXRfYXdhcmUiOmZhbHNlLCJ0eXBlIjoiT1BfTEFORyJ9XQ==\", params=, external_params=)", apiModel.Statement)
 				assert.Equal(t, common.V1, apiModel.APIVersion)
 			},
@@ -120,7 +120,7 @@ func TestRunbookTranslatorCommon_ToAPIModelWithVersion(t *testing.T) {
 			backendVersion: version.NewBackendVersion("release-29.1.0"),
 			apiVersion:     common.V2,
 			expectError:    false,
-			validate: func(t *testing.T, apiModel *statement.StatementInputAPIModel) {
+			validate: func(t *testing.T, apiModel *statement.InputAPIModel) {
 				assert.Equal(t, `delete_notebook(notebook_name="test_runbook")`, apiModel.Statement)
 				assert.Equal(t, common.V2, apiModel.APIVersion)
 			},

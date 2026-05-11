@@ -32,7 +32,7 @@ import (
 type ReportTemplateTranslatorCommon struct{}
 
 // ToAPIModelWithVersion creates a statement API model for the given TF model and API version
-func (t *ReportTemplateTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *reporttemplatetf.ReportTemplateTFModel) (*statement.StatementInputAPIModel, error) {
+func (t *ReportTemplateTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *reporttemplatetf.ReportTemplateTFModel) (*statement.InputAPIModel, error) {
 	var stmt string
 
 	switch requestContext.Operation {
@@ -48,7 +48,7 @@ func (t *ReportTemplateTranslatorCommon) ToAPIModelWithVersion(requestContext *c
 		return nil, fmt.Errorf("unsupported operation: %v", requestContext.Operation)
 	}
 
-	apiModel := &statement.StatementInputAPIModel{
+	apiModel := &statement.InputAPIModel{
 		Statement:  stmt,
 		APIVersion: requestContext.APIVersion,
 	}

@@ -29,7 +29,7 @@ import (
 type FileTranslatorCommon struct{}
 
 // ToAPIModelWithVersion converts a TF model to an API model with specified backend version
-func (t *FileTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *filetf.FileTFModel) (*statement.StatementInputAPIModel, error) {
+func (t *FileTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *filetf.FileTFModel) (*statement.InputAPIModel, error) {
 	var stmt string
 
 	switch requestContext.Operation {
@@ -45,7 +45,7 @@ func (t *FileTranslatorCommon) ToAPIModelWithVersion(requestContext *common.Requ
 		return nil, fmt.Errorf("unsupported operation: %v", requestContext.Operation)
 	}
 
-	apiModel := &statement.StatementInputAPIModel{
+	apiModel := &statement.InputAPIModel{
 		Statement:  stmt,
 		APIVersion: requestContext.APIVersion,
 	}

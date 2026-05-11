@@ -48,7 +48,7 @@ func (p *BackendVersionProvider) FetchBackendVersion(requestContext *common.Requ
 	log.LogInfo(requestContext, "Fetching backend version from API", nil)
 
 	// Create the statement to get backend version
-	apiModel := &statement.StatementInputAPIModel{
+	apiModel := &statement.InputAPIModel{
 		Statement:  "backend_version",
 		APIVersion: common.V1, // Use V1 endpoint for backend_version
 	}

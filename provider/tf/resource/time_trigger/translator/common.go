@@ -29,7 +29,7 @@ import (
 type TimeTriggerTranslatorCommon struct{}
 
 // ToAPIModelWithVersion converts a TF model to an API model with specified backend version
-func (t *TimeTriggerTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *timetriggertf.TimeTriggerTFModel) (*statement.StatementInputAPIModel, error) {
+func (t *TimeTriggerTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *timetriggertf.TimeTriggerTFModel) (*statement.InputAPIModel, error) {
 	var stmt string
 
 	switch requestContext.Operation {
@@ -45,7 +45,7 @@ func (t *TimeTriggerTranslatorCommon) ToAPIModelWithVersion(requestContext *comm
 		return nil, fmt.Errorf("unsupported operation: %v", requestContext.Operation)
 	}
 
-	apiModel := &statement.StatementInputAPIModel{
+	apiModel := &statement.InputAPIModel{
 		Statement:  stmt,
 		APIVersion: requestContext.APIVersion,
 	}

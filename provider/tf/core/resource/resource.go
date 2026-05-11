@@ -88,6 +88,7 @@ func ExecuteCreate[TF model.TFModel, API_V1 api.APIModel, API_V2 api.APIModel](c
 	requestCtx := common.NewRequestContext(subsystemCtx).
 		WithOperation(common.Create).
 		WithResourceType(params.ResourceType).
+		WithResourceName(resourceName).
 		WithBackendVersion(params.BackendVersion)
 
 	if !config.EnsureClientConfigured(params.Client, &resp.Diagnostics) {
@@ -149,6 +150,7 @@ func ExecuteRead[TF model.TFModel, API_V1 api.APIModel, API_V2 api.APIModel](ctx
 	requestCtx := common.NewRequestContext(subsystemCtx).
 		WithOperation(common.Read).
 		WithResourceType(params.ResourceType).
+		WithResourceName(resourceName).
 		WithBackendVersion(params.BackendVersion)
 
 	if !config.EnsureClientConfigured(params.Client, &resp.Diagnostics) {
@@ -209,6 +211,7 @@ func ExecuteUpdate[TF model.TFModel, API_V1 api.APIModel, API_V2 api.APIModel](c
 	requestCtx := common.NewRequestContext(subsystemCtx).
 		WithOperation(common.Update).
 		WithResourceType(params.ResourceType).
+		WithResourceName(resourceName).
 		WithBackendVersion(params.BackendVersion)
 
 	if !config.EnsureClientConfigured(params.Client, &resp.Diagnostics) {
@@ -269,6 +272,7 @@ func ExecuteDelete[TF model.TFModel, API_V1 api.APIModel, API_V2 api.APIModel](c
 	requestCtx := common.NewRequestContext(subsystemCtx).
 		WithOperation(common.Delete).
 		WithResourceType(params.ResourceType).
+		WithResourceName(resourceName).
 		WithBackendVersion(params.BackendVersion)
 
 	if !config.EnsureClientConfigured(params.Client, &resp.Diagnostics) {
@@ -299,7 +303,9 @@ func ExecuteDelete[TF model.TFModel, API_V1 api.APIModel, API_V2 api.APIModel](c
 		},
 	)
 
-	if common.HasErrorOrNil(err, resultData) {
+	// in case of resources CRUD-ed via dedicated routes (not op statements via /v2/execute), DELETE returns 204 NoContent, i.e. empty body (valid response)
+	if (common.IsResourceCreatedViaOpStatements(requestCtx.ResourceType) == true &&
+		common.HasErrorOrNil(err, resultData)) || err != nil {
 		errorMessage := getErrorMessage(err, "delete")
 
 		log.LogError(requestCtx, fmt.Sprintf("%s delete operation failed", params.ResourceType), map[string]any{
@@ -310,7 +316,7 @@ func ExecuteDelete[TF model.TFModel, API_V1 api.APIModel, API_V2 api.APIModel](c
 	}
 
 	log.LogInfo(requestCtx, fmt.Sprintf("%s delete operation completed successfully", params.ResourceType), map[string]any{
-		fmt.Sprintf("%s_name", params.ResourceType): resultData.GetName(),
+		fmt.Sprintf("%s_name", params.ResourceType): requestCtx.ResourceName,
 	})
 }
 
@@ -325,6 +331,7 @@ func ExecuteImportState(ctx context.Context, req resource.ImportStateRequest, re
 	requestCtx := common.NewRequestContext(subsystemCtx).
 		WithOperation(common.Import).
 		WithResourceType(resourceType)
+		// resource name is not populated for import operations
 
 	log.LogInfo(requestCtx, fmt.Sprintf("Starting %s import operation", resourceType), map[string]interface{}{
 		"import_id": req.ID,

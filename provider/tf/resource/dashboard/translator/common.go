@@ -32,7 +32,7 @@ import (
 type DashboardTranslatorCommon struct{}
 
 // ToAPIModelWithVersion creates a statement API model for the given TF model and API version
-func (t *DashboardTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *model.DashboardTFModel) (*statement.StatementInputAPIModel, error) {
+func (t *DashboardTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *model.DashboardTFModel) (*statement.InputAPIModel, error) {
 	var stmt string
 
 	switch requestContext.Operation {
@@ -48,7 +48,7 @@ func (t *DashboardTranslatorCommon) ToAPIModelWithVersion(requestContext *common
 		return nil, fmt.Errorf("unsupported operation: %v", requestContext.Operation)
 	}
 
-	apiModel := &statement.StatementInputAPIModel{
+	apiModel := &statement.InputAPIModel{
 		Statement:  stmt,
 		APIVersion: requestContext.APIVersion,
 	}

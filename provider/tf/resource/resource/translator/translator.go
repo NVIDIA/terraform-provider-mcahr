@@ -56,6 +56,6 @@ func (t *ResourceTranslator) ToTFModel(ctx *common.RequestContext, data *coretra
 }
 
 // ToAPIModel converts a TF model to an API model for V2 backend
-func (t *ResourceTranslator) ToAPIModel(ctx *common.RequestContext, data *coretranslator.TranslationData, tfModel *resourcetf.ResourceTFModel) (*statement.StatementInputAPIModel, error) {
+func (t *ResourceTranslator) ToAPIModel(ctx *common.RequestContext, data *coretranslator.TranslationData, tfModel *resourcetf.ResourceTFModel) (*statement.InputAPIModel, error) {
 	return t.ToAPIModelWithVersion(ctx, data, tfModel)
 }

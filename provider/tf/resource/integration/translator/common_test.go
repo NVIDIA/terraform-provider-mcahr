@@ -41,7 +41,7 @@ func TestIntegrationTranslatorCommon_ToAPIModelWithVersion(t *testing.T) {
 		operation      common.CrudOperation
 		backendVersion common.APIVersion
 		expectError    bool
-		validateResult func(t *testing.T, apiModel *statement.StatementInputAPIModel)
+		validateResult func(t *testing.T, apiModel *statement.InputAPIModel)
 	}{
 		{
 			name: "Create operation with V2 backend",
@@ -57,7 +57,7 @@ func TestIntegrationTranslatorCommon_ToAPIModelWithVersion(t *testing.T) {
 			operation:      common.Create,
 			backendVersion: common.V2,
 			expectError:    false,
-			validateResult: func(t *testing.T, apiModel *statement.StatementInputAPIModel) {
+			validateResult: func(t *testing.T, apiModel *statement.InputAPIModel) {
 				expected := `define_integration(integration_name="test-okta-integration", serial_number="SN123456", enabled=true, permissions_user="admin@example.com", params={"api_rate_limit":0,"api_token":"okta-api-key","cache_ttl_ms":0,"idp_name":"","url":"https://company.okta.com"}, service_name="okta")`
 				assert.Equal(t, expected, apiModel.Statement)
 				assert.Equal(t, common.V2, apiModel.APIVersion)
@@ -71,7 +71,7 @@ func TestIntegrationTranslatorCommon_ToAPIModelWithVersion(t *testing.T) {
 			operation:      common.Read,
 			backendVersion: common.V1,
 			expectError:    false,
-			validateResult: func(t *testing.T, apiModel *statement.StatementInputAPIModel) {
+			validateResult: func(t *testing.T, apiModel *statement.InputAPIModel) {
 				expectedStatement := `get_integration_class(integration_name="test-okta-integration")`
 				assert.Equal(t, expectedStatement, apiModel.Statement)
 				assert.Equal(t, common.V1, apiModel.APIVersion)
@@ -93,7 +93,7 @@ func TestIntegrationTranslatorCommon_ToAPIModelWithVersion(t *testing.T) {
 			operation:      common.Update,
 			backendVersion: common.V2,
 			expectError:    false,
-			validateResult: func(t *testing.T, apiModel *statement.StatementInputAPIModel) {
+			validateResult: func(t *testing.T, apiModel *statement.InputAPIModel) {
 				expected := `update_integration(integration_name="azure-ad-prod", serial_number="SN789012", enabled=false, permissions_user="service@domain.com", params={"api_rate_limit":0,"cache_ttl_ms":0,"client_id":"client-456","client_secret":"secret-789","idp_name":"azure-ad-idp","tenant_id":"tenant-123"})`
 				assert.Equal(t, expected, apiModel.Statement)
 				assert.Equal(t, common.V2, apiModel.APIVersion)
@@ -107,7 +107,7 @@ func TestIntegrationTranslatorCommon_ToAPIModelWithVersion(t *testing.T) {
 			operation:      common.Delete,
 			backendVersion: common.V1,
 			expectError:    false,
-			validateResult: func(t *testing.T, apiModel *statement.StatementInputAPIModel) {
+			validateResult: func(t *testing.T, apiModel *statement.InputAPIModel) {
 				expectedStatement := `delete_integration(integration_name="integration-to-delete")`
 				assert.Equal(t, expectedStatement, apiModel.Statement)
 				assert.Equal(t, common.V1, apiModel.APIVersion)

@@ -139,6 +139,6 @@ func toTFModelJsonFields(tfModel *runbooktf.RunbookTFModel, cells []customattrib
 	return nil
 }
 
-func (r *RunbookTranslator) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *runbooktf.RunbookTFModel) (apiModel *statement.StatementInputAPIModel, err error) {
+func (r *RunbookTranslator) ToAPIModel(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *runbooktf.RunbookTFModel) (apiModel *statement.InputAPIModel, err error) {
 	return r.ToAPIModelWithVersion(requestContext, translationData, tfModel)
 }

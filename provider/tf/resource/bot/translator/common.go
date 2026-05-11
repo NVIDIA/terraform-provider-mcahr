@@ -30,7 +30,7 @@ import (
 type BotTranslatorCommon struct{}
 
 // ToAPIModelWithVersion converts a TF model to an API model with specified backend version
-func (t *BotTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *bottf.BotTFModel) (*statement.StatementInputAPIModel, error) {
+func (t *BotTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *bottf.BotTFModel) (*statement.InputAPIModel, error) {
 	var stmt string
 
 	switch requestContext.Operation {
@@ -46,7 +46,7 @@ func (t *BotTranslatorCommon) ToAPIModelWithVersion(requestContext *common.Reque
 		return nil, fmt.Errorf("unsupported operation: %v", requestContext.Operation)
 	}
 
-	apiModel := &statement.StatementInputAPIModel{
+	apiModel := &statement.InputAPIModel{
 		Statement:  stmt,
 		APIVersion: requestContext.APIVersion,
 	}

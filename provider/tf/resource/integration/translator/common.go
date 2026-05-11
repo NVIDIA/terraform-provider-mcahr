@@ -31,7 +31,7 @@ import (
 type IntegrationTranslatorCommon struct{}
 
 // ToAPIModelWithVersion converts a TF model to an API model with specified backend version
-func (a *IntegrationTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *integrationtf.IntegrationTFModel) (apiModel *statement.StatementInputAPIModel, err error) {
+func (a *IntegrationTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *integrationtf.IntegrationTFModel) (apiModel *statement.InputAPIModel, err error) {
 	var stmt string
 
 	switch requestContext.Operation {
@@ -56,7 +56,7 @@ func (a *IntegrationTranslatorCommon) ToAPIModelWithVersion(requestContext *comm
 		return nil, err
 	}
 
-	apiModel = &statement.StatementInputAPIModel{
+	apiModel = &statement.InputAPIModel{
 		Statement:  stmt,
 		APIVersion: requestContext.APIVersion,
 	}
