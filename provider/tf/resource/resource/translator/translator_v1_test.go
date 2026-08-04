@@ -56,7 +56,7 @@ func TestResourceTranslatorV1_ToTFModel_Success(t *testing.T) {
 	assert.Equal(t, "Test resource", result.Description.ValueString())
 	assert.Equal(t, "host | pod | app='test'", result.Value.ValueString())
 	require.False(t, result.Params.IsNull())
-	params := utils.ListSliceFromTFModel(requestContext.Context, result.Params)
+	params, _ := utils.ListSliceFromTFModel(requestContext.Context, result.Params)
 	assert.Equal(t, []string{"param1", "param2"}, params)
 }
 

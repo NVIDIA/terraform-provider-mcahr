@@ -97,7 +97,7 @@ variable "s3_bucket" {
 - `description` (String) A user-friendly explanation of an object.
 - `enabled` (Boolean) If the object is currently enabled or disabled.
 - `inline_data` (String) The inline file data of a distributed File object. (conflicts with input_file)
-- `input_file` (String) The local source of a distributed File object. (conflicts with inline_data)
+- `input_file` (String) The source of a distributed File object: a local path, or an `https://` URL to download. Plaintext `http://` URLs are rejected, because the downloaded content becomes the stored file and is not integrity-checked. (conflicts with inline_data)
 - `md5` (String) The md5 checksum of a file, e.g. filemd5("${path.module}/data/example-file.txt"). It's used to trigger the file upload when the file changes.
 - `mode` (String) The File's permissions, like 'chmod', in octal (e.g. '0644').
 - `owner` (String) The File's ownership, like 'chown' (e.g. 'user:group').

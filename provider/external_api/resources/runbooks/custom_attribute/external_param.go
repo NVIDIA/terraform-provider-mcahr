@@ -91,33 +91,19 @@ func (p *ExternalParamJson) UnmarshalJSON(b []byte) error {
 	result := commonstruct.ApplyCustomStructTags(*aux, options)
 
 	// Set in the final struct the values from the processed data
-	if name, ok := result["name"]; ok {
-		p.Name = name.(string)
-	}
+	p.Name = stringOrKeep(result, "name", p.Name)
 
-	if value, ok := result["value"]; ok {
-		p.Value = value.(string)
-	}
+	p.Value = stringOrKeep(result, "value", p.Value)
 
-	if source, ok := result["source"]; ok {
-		p.Source = source.(string)
-	}
+	p.Source = stringOrKeep(result, "source", p.Source)
 
-	if jsonPath, ok := result["json_path"]; ok {
-		p.JsonPath = jsonPath.(string)
-	}
+	p.JsonPath = stringOrKeep(result, "json_path", p.JsonPath)
 
-	if export, ok := result["export"]; ok {
-		p.Export = export.(bool)
-	}
+	p.Export = boolOrKeep(result, "export", p.Export)
 
-	if paramType, ok := result["param_type"]; ok {
-		p.ParamType = paramType.(string)
-	}
+	p.ParamType = stringOrKeep(result, "param_type", p.ParamType)
 
-	if description, ok := result["description"]; ok {
-		p.Description = description.(string)
-	}
+	p.Description = stringOrKeep(result, "description", p.Description)
 
 	return nil
 }

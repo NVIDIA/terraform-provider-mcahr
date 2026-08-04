@@ -24,6 +24,8 @@ import (
 	utils "terraform/terraform-provider/provider/tf/core/translator"
 	"terraform/terraform-provider/provider/tf/resource/dashboard/model"
 	converters "terraform/terraform-provider/provider/tf/resource/dashboard/translator/object_converters"
+
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // No need for custom structs, using customattribute package instead
@@ -61,7 +63,7 @@ func (t *DashboardTranslatorCommon) buildCreateStatement(requestContext *common.
 }
 
 func (t *DashboardTranslatorCommon) buildReadStatement(tfModel *model.DashboardTFModel) string {
-	return fmt.Sprintf("get_dashboard_class(dashboard_name=\"%s\")", tfModel.Name.ValueString())
+	return fmt.Sprintf("get_dashboard_class(dashboard_name=%s)", utils.EscapeString(tfModel.Name.ValueString()))
 }
 
 func (t *DashboardTranslatorCommon) buildUpdateStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *model.DashboardTFModel) string {
@@ -69,7 +71,7 @@ func (t *DashboardTranslatorCommon) buildUpdateStatement(requestContext *common.
 }
 
 func (t *DashboardTranslatorCommon) buildDeleteStatement(tfModel *model.DashboardTFModel) string {
-	return fmt.Sprintf("delete_dashboard(dashboard_name=\"%s\")", tfModel.Name.ValueString())
+	return fmt.Sprintf("delete_dashboard(dashboard_name=%s)", utils.EscapeString(tfModel.Name.ValueString()))
 }
 
 func (t *DashboardTranslatorCommon) buildDashboardStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, statementName string, tfModel *model.DashboardTFModel) string {
@@ -88,12 +90,20 @@ func (t *DashboardTranslatorCommon) buildDashboardConfigurationJSON(requestConte
 	groups := buildGroupsForStatement(requestContext, tfModel)
 	values := buildValuesForStatement(requestContext, tfModel)
 
+	lists, err := utils.ListSlicesFromTFModel(requestContext.Context, map[string]types.List{
+		"other_tags":  tfModel.OtherTags,
+		"identifiers": tfModel.Identifiers,
+	})
+	if err != nil {
+		return "", err
+	}
+
 	config := map[string]any{
 		"resource_query": tfModel.ResourceQuery.ValueString(),
 		"groups":         groups,
 		"values":         values,
-		"other_tags":     utils.ListSliceFromTFModel(requestContext.Context, tfModel.OtherTags),
-		"identifiers":    utils.ListSliceFromTFModel(requestContext.Context, tfModel.Identifiers),
+		"other_tags":     lists["other_tags"],
+		"identifiers":    lists["identifiers"],
 	}
 
 	configBytes, _ := json.Marshal(config)

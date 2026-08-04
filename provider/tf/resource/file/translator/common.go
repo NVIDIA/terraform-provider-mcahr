@@ -59,7 +59,7 @@ func (t *FileTranslatorCommon) buildCreateStatement(requestContext *common.Reque
 
 func (t *FileTranslatorCommon) buildReadStatement(tfModel *filetf.FileTFModel) string {
 	name := tfModel.Name.ValueString()
-	return fmt.Sprintf("get_file_class(file_name=\"%s\")", name)
+	return fmt.Sprintf("get_file_class(file_name=%s)", utils.EscapeString(name))
 }
 
 func (t *FileTranslatorCommon) buildUpdateStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *filetf.FileTFModel) string {
@@ -68,7 +68,7 @@ func (t *FileTranslatorCommon) buildUpdateStatement(requestContext *common.Reque
 
 func (t *FileTranslatorCommon) buildDeleteStatement(tfModel *filetf.FileTFModel) string {
 	name := tfModel.Name.ValueString()
-	return fmt.Sprintf("delete_file(name=\"%s\")", name)
+	return fmt.Sprintf("delete_file(name=%s)", utils.EscapeString(name))
 }
 
 func (t *FileTranslatorCommon) buildFileStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, statementName string, tfModel *filetf.FileTFModel) string {

@@ -454,3 +454,47 @@ func TestIntegrationUtilsFunctions_EdgeCases(t *testing.T) {
 		assert.Equal(t, int64(0), result.ValueInt64())
 	})
 }
+
+func TestGetStringOrEmpty_MistypedValueDoesNotPanic(t *testing.T) {
+	t.Parallel()
+
+	requestContext := common.NewRequestContext(context.Background())
+
+	tests := []struct {
+		name  string
+		value interface{}
+	}{
+		{name: "number", value: 42.0},
+		{name: "null", value: nil},
+		{name: "boolean", value: true},
+		{name: "object", value: map[string]interface{}{"a": 1}},
+		{name: "array", value: []interface{}{"a"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			integrationData := map[string]interface{}{"api_url": tt.value}
+
+			// This asserted .(string) directly and panicked the provider
+			// process whenever the backend returned an unexpected type.
+			var result types.String
+			assert.NotPanics(t, func() {
+				result = GetStringOrEmpty(requestContext, integrationData, "api_url")
+			})
+			assert.Equal(t, types.StringValue(""), result)
+		})
+	}
+}
+
+func TestGetStringOrEmpty_StringAndAbsent(t *testing.T) {
+	t.Parallel()
+
+	requestContext := common.NewRequestContext(context.Background())
+
+	assert.Equal(t, types.StringValue("https://example.com"),
+		GetStringOrEmpty(requestContext, map[string]interface{}{"api_url": "https://example.com"}, "api_url"))
+	assert.Equal(t, types.StringValue(""),
+		GetStringOrEmpty(requestContext, map[string]interface{}{}, "api_url"))
+}

@@ -23,6 +23,8 @@ import (
 	"terraform/terraform-provider/provider/tf/core/translator"
 	utils "terraform/terraform-provider/provider/tf/core/translator"
 	actiontf "terraform/terraform-provider/provider/tf/resource/action/model"
+
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // ActionTranslatorCommon contains shared functionality between V1 and V2 translators
@@ -32,17 +34,22 @@ type ActionTranslatorCommon struct{}
 func (a *ActionTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *actiontf.ActionTFModel) (*statement.InputAPIModel, error) {
 	var stmt string
 
+	var err error
+
 	switch requestContext.Operation {
 	case common.Create:
-		stmt = a.buildCreateStatement(requestContext, translationData, tfModel)
+		stmt, err = a.buildCreateStatement(requestContext, translationData, tfModel)
 	case common.Read:
 		stmt = a.buildReadStatement(tfModel)
 	case common.Update:
-		stmt = a.buildUpdateStatement(requestContext, translationData, tfModel)
+		stmt, err = a.buildUpdateStatement(requestContext, translationData, tfModel)
 	case common.Delete:
 		stmt = a.buildDeleteStatement(tfModel)
 	default:
 		return nil, fmt.Errorf("unsupported operation: %v", requestContext.Operation)
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	apiModel := &statement.InputAPIModel{
@@ -53,29 +60,44 @@ func (a *ActionTranslatorCommon) ToAPIModelWithVersion(requestContext *common.Re
 	return apiModel, nil
 }
 
-func (a *ActionTranslatorCommon) buildCreateStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *actiontf.ActionTFModel) string {
+func (a *ActionTranslatorCommon) buildCreateStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *actiontf.ActionTFModel) (string, error) {
 	return a.buildActionStatement(requestContext, translationData, "define_action", tfModel)
 }
 
 func (a *ActionTranslatorCommon) buildReadStatement(tfModel *actiontf.ActionTFModel) string {
 	name := tfModel.Name.ValueString()
-	return fmt.Sprintf("get_action_class(action_name=\"%s\")", name)
+	return fmt.Sprintf("get_action_class(action_name=%s)", utils.EscapeString(name))
 }
 
-func (a *ActionTranslatorCommon) buildUpdateStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *actiontf.ActionTFModel) string {
+func (a *ActionTranslatorCommon) buildUpdateStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *actiontf.ActionTFModel) (string, error) {
 	return a.buildActionStatement(requestContext, translationData, "update_action", tfModel)
 }
 
 func (a *ActionTranslatorCommon) buildDeleteStatement(tfModel *actiontf.ActionTFModel) string {
 	name := tfModel.Name.ValueString()
-	return fmt.Sprintf("delete_action(action_name=\"%s\")", name)
+	return fmt.Sprintf("delete_action(action_name=%s)", utils.EscapeString(name))
 }
 
-func (a *ActionTranslatorCommon) buildActionStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, statementName string, tfModel *actiontf.ActionTFModel) string {
+func (a *ActionTranslatorCommon) buildActionStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, statementName string, tfModel *actiontf.ActionTFModel) (string, error) {
 	// Build the action statement from the TF model using the builder pattern
 	// Used for both define_action (create) and update_action (update) operations
 
 	ctx := requestContext.Context
+
+	// Extract the list attributes up front. A conversion failure must abort
+	// the apply: silently sending an empty allowed_entities or editors list
+	// would clear the action's authorization instead.
+	lists, err := utils.ListSlicesFromTFModel(ctx, map[string]types.List{
+		"params":                  tfModel.Params,
+		"resource_tags_to_export": tfModel.ResourceTagsToExport,
+		"file_deps":               tfModel.FileDeps,
+		"allowed_entities":        tfModel.AllowedEntities,
+		"editors":                 tfModel.Editors,
+	})
+	if err != nil {
+		return "", err
+	}
+
 	return utils.NewStatementBuilder(statementName, requestContext.BackendVersion, translationData.CompatibilityOptions).
 		SetStringField("action_name", tfModel.Name.ValueString(), "name").
 		SetStringField("command", tfModel.Command.ValueString(), "command").
@@ -94,10 +116,10 @@ func (a *ActionTranslatorCommon) buildActionStatement(requestContext *common.Req
 		SetStringField("complete_short_template", tfModel.CompleteShortTemplate.ValueString(), "complete_short_template").
 		SetStringField("error_title_template", tfModel.ErrorTitleTemplate.ValueString(), "error_title_template").
 		SetStringField("error_short_template", tfModel.ErrorShortTemplate.ValueString(), "error_short_template").
-		SetArrayField("params", utils.ListSliceFromTFModel(ctx, tfModel.Params), "params").
-		SetArrayField("resource_tags_to_export", utils.ListSliceFromTFModel(ctx, tfModel.ResourceTagsToExport), "resource_tags_to_export").
-		SetArrayField("file_deps", utils.ListSliceFromTFModel(ctx, tfModel.FileDeps), "file_deps").
-		SetArrayField("allowed_entities", utils.ListSliceFromTFModel(ctx, tfModel.AllowedEntities), "allowed_entities").
-		SetArrayField("editors", utils.ListSliceFromTFModel(ctx, tfModel.Editors), "editors").
-		Build()
+		SetArrayField("params", lists["params"], "params").
+		SetArrayField("resource_tags_to_export", lists["resource_tags_to_export"], "resource_tags_to_export").
+		SetArrayField("file_deps", lists["file_deps"], "file_deps").
+		SetArrayField("allowed_entities", lists["allowed_entities"], "allowed_entities").
+		SetArrayField("editors", lists["editors"], "editors").
+		Build(), nil
 }

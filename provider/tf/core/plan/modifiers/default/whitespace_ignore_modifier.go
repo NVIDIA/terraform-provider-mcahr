@@ -55,6 +55,15 @@ func IgnoreWhitespaceModifier() planmodifier.String {
 	return ignoreWhitespaceModifier{}
 }
 
+// normalizeWhitespace collapses runs of whitespace to a single space and trims
+// the ends, so values differing only in formatting compare equal.
+//
+// This used to delete every space instead, which is not the same thing: it made
+// `echo a b` and `echo ab` indistinguishable, so an edit that changed only the
+// spacing inside a command produced no plan diff and the backend kept running
+// the old command. The attributes using this modifier -- action, runbook,
+// time_trigger and system_settings -- are exactly the command-bearing ones,
+// where silently discarding an operator's edit matters most.
 func removeWhitespace(str string) string {
-	return strings.ReplaceAll(str, " ", "")
+	return strings.Join(strings.Fields(str), " ")
 }

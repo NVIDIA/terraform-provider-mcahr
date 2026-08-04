@@ -81,7 +81,7 @@ func getStringListFromAttributes(requestContext *common.RequestContext, attribut
 		return nil, fmt.Errorf("params_groups key '%s' is not a list, got type %T", key, attrValue)
 	}
 
-	return utils.ListSliceFromTFModel(requestContext.Context, list), nil
+	return utils.ListSliceFromTFModel(requestContext.Context, list)
 }
 
 func ParamsGroupsToTFModel(requestContext *common.RequestContext, apiParamsGroups runbookapi.ParamsGroups) (types.Object, diag.Diagnostics) {

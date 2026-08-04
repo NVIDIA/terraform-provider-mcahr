@@ -33,10 +33,30 @@ var (
 )
 
 func shouldDownloadFile(inputFile string) bool {
-	return strings.HasPrefix(inputFile, "http:") || strings.HasPrefix(inputFile, "https://")
+	return strings.HasPrefix(inputFile, "https://")
+}
+
+// isPlaintextHTTP reports whether input_file names a plaintext http:// source.
+//
+// These are rejected rather than downloaded: the response is not merely
+// probed, it becomes the resource's content and is uploaded to platform
+// storage, so anyone able to observe or intercept the connection can choose
+// what gets stored. There is no checksum attribute to fall back on either, so
+// the provider has no way to detect substituted content.
+// "https://" does not carry the "http:" prefix, so this matches exactly what
+// the previous condition treated as a plaintext download target.
+func isPlaintextHTTP(inputFile string) bool {
+	return strings.HasPrefix(inputFile, "http:")
 }
 
 func maybeDownloadFile(requestContext *common.RequestContext, data *process.ProcessData, fileUrl string) (fileName string, err error) {
+
+	if isPlaintextHTTP(fileUrl) {
+		return "", fmt.Errorf(
+			"input_file %q uses plaintext http; remote file sources must use https:// "+
+				"because the downloaded content becomes the stored file and is not integrity-checked",
+			fileUrl)
+	}
 
 	if shouldDownloadFile(fileUrl) {
 		tmpFilePath, err := externalfile.DownloadFileHttpsToTemp(requestContext, data.Client.GetHttpClient(), fileUrl, tempDownloadFilePathPrefix)

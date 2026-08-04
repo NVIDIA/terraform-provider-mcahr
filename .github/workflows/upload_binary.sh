@@ -19,8 +19,47 @@ set -e
 # Uploads a file to NGC if the tag does not exist.
 # Usage: ./uploadVersion.sh <resource:tag> --source <file> [other-args...]
 
+# NOTE: this file is kept byte-identical with
+# generator/templates/workflows/workflows/upload_binary.sh, which the generator
+# copies into every published provider repository. Change both together.
+
+# Pinned NGC CLI version and the SHA-256 of its Linux AMD64 archive. The digest
+# is published by NVIDIA in the resource release notes ("Linux Intel SHA256
+# Checksum") at:
+#   https://api.ngc.nvidia.com/v2/resources/nvidia/ngc-apps/ngc_cli/versions/3.63.0
+# Without this check the job executes whatever bytes the endpoint returns, with
+# NGC_API_KEY_CI already in the environment. Bump both values together.
+NGC_CLI_VERSION="3.63.0"
+NGC_CLI_SHA256="c6b25abcdb08b40c19e18c5e0cfea58ce40017c4293a905ae153103cd7a12eb5"
+
 log() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*" >&2
+}
+
+# Verifies a file against an expected SHA-256, failing closed if the digest
+# does not match or no checksum tool is available.
+verify_sha256() {
+    file="$1"
+    expected="$2"
+
+    if command -v sha256sum > /dev/null 2>&1; then
+        actual=$(sha256sum "$file" | cut -d' ' -f1)
+    elif command -v shasum > /dev/null 2>&1; then
+        actual=$(shasum -a 256 "$file" | cut -d' ' -f1)
+    else
+        log "Error: no sha256sum or shasum available to verify $file"
+        exit 1
+    fi
+
+    if [ "$actual" != "$expected" ]; then
+        log "Error: checksum mismatch for $file"
+        log "  expected: $expected"
+        log "  actual:   $actual"
+        rm -f "$file"
+        exit 1
+    fi
+
+    log "Checksum verified for $file"
 }
 
 setup_ngc_cli() {
@@ -35,10 +74,13 @@ setup_ngc_cli() {
     export DEBIAN_FRONTEND=noninteractive
     sudo apt-get update -qq && sudo apt-get install -y -qq curl wget unzip
     
-    log "Downloading NGC CLI..."
+    log "Downloading NGC CLI ${NGC_CLI_VERSION}..."
     wget -q --content-disposition \
-        'https://api.ngc.nvidia.com/v2/resources/nvidia/ngc-apps/ngc_cli/versions/3.63.0/files/ngccli_linux.zip' \
+        "https://api.ngc.nvidia.com/v2/resources/nvidia/ngc-apps/ngc_cli/versions/${NGC_CLI_VERSION}/files/ngccli_linux.zip" \
         -O ngccli_linux.zip
+
+    verify_sha256 ngccli_linux.zip "$NGC_CLI_SHA256"
+
     unzip -o -q ngccli_linux.zip
     chmod +x ngc-cli/ngc
     export PATH="${PATH}:$(pwd)/ngc-cli"

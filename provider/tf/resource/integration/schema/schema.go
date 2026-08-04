@@ -116,6 +116,7 @@ func addCustomSharedSchema(builder *coreschema.SchemaBuilder) {
 		MarkdownDescription: "The API key of the integration",
 		Optional:            true,
 		Computed:            true,
+		Sensitive:           true, // Credential: keep out of plan output and CI logs
 		PlanModifiers: []planmodifier.String{
 			nulls.NullStringIfUnknownModifier(),
 			defaults.EmptyStringModifier(),
@@ -220,6 +221,7 @@ func addAzureActiveDirectorySchema(builder *coreschema.SchemaBuilder) {
 		MarkdownDescription: "The client secret of the integration",
 		Optional:            true,
 		Computed:            true,
+		Sensitive:           true, // Credential: keep out of plan output and CI logs
 		PlanModifiers: []planmodifier.String{
 			nulls.NullStringIfUnknownModifier(),
 			defaults.EmptyStringModifier(),
@@ -248,6 +250,7 @@ func addGoogleCloudIdentitySchema(builder *coreschema.SchemaBuilder) {
 		MarkdownDescription: "The credentials of the integration",
 		Optional:            true,
 		Computed:            true,
+		Sensitive:           true, // Credential: keep out of plan output and CI logs
 		PlanModifiers: []planmodifier.String{
 			nulls.NullStringIfUnknownModifier(),
 			defaults.EmptyStringModifier(),
@@ -267,6 +270,7 @@ func addBcmConnectivitySchema(builder *coreschema.SchemaBuilder) {
 		MarkdownDescription: "The API certificate of the integration",
 		Optional:            true,
 		Computed:            true,
+		Sensitive:           true, // Credential: keep out of plan output and CI logs
 		PlanModifiers: []planmodifier.String{
 			nulls.NullStringIfUnknownModifier(),
 			defaults.EmptyStringModifier(),

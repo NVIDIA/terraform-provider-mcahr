@@ -22,6 +22,7 @@ import (
 	"terraform/terraform-provider/provider/external_api/resources"
 	filesapi "terraform/terraform-provider/provider/external_api/resources/files"
 	corehelper "terraform/terraform-provider/provider/tf/core/helper"
+	utils "terraform/terraform-provider/provider/tf/core/translator"
 )
 
 type GetFilePresignedPutAPIModelV1 struct {
@@ -36,7 +37,8 @@ func (t GetFilePresignedPutAPIModelV1) GetErrors() string {
 
 func GetFilePresignedPut(requestContext *common.RequestContext, client *client.PlatformClient, apiVersion common.APIVersion, fileObjectName string) (string, error) {
 
-	statement := fmt.Sprintf("get_file_attribute(name=\"%s\", field_name=\"presigned_put\")", fileObjectName)
+	statement := fmt.Sprintf("get_file_attribute(name=%s, field_name=\"presigned_put\")",
+		utils.EscapeString(fileObjectName))
 
 	presignedUrl, err := getFilePresignedPutByApiVersion(requestContext, client, apiVersion, statement)
 	if err != nil {

@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	customattribute "terraform/terraform-provider/provider/external_api/resources/dashboards/custom_attribute"
+	utils "terraform/terraform-provider/provider/tf/core/translator"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -52,8 +53,10 @@ func ValuesListToInternal(ctx context.Context, tfList types.List) ([]customattri
 
 	values := make([]customattribute.ValueJson, len(models))
 	for i, m := range models {
-		var vals []string
-		m.Values.ElementsAs(ctx, &vals, false)
+		vals, err := utils.ListSliceFromTFModel(ctx, m.Values)
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract values for color %q: %w", m.Color.ValueString(), err)
+		}
 		values[i] = customattribute.ValueJson{
 			Color:  m.Color.ValueString(),
 			Values: vals,

@@ -237,14 +237,16 @@ func TestGroupByTagOrderToTF_RoundTrip(t *testing.T) {
 	tfObj, diags := groupByTagOrderToTF(original)
 	require.False(t, diags.HasError())
 
-	roundTripped := groupByTagOrderFromAttr(context.Background(), tfObj)
+	roundTripped, err := groupByTagOrderFromAttr(context.Background(), tfObj)
+	require.NoError(t, err)
 	assert.Equal(t, original.Type, roundTripped.Type)
 	assert.Equal(t, original.Values, roundTripped.Values)
 }
 
 func TestGroupByTagOrderFromAttr_NullObject(t *testing.T) {
 	t.Parallel()
-	result := groupByTagOrderFromAttr(context.Background(), nil)
+	result, err := groupByTagOrderFromAttr(context.Background(), nil)
+	require.NoError(t, err)
 	assert.Equal(t, "DEFAULT", result.Type)
 	assert.Equal(t, []string{}, result.Values)
 }
@@ -259,7 +261,8 @@ func TestBreakdownTagValuesRoundTrip(t *testing.T) {
 	tfList, diags := breakdownTagValuesToTF(original)
 	require.False(t, diags.HasError())
 
-	roundTripped := breakdownTagValuesFromAttr(context.Background(), tfList)
+	roundTripped, err := breakdownTagValuesFromAttr(context.Background(), tfList)
+	require.NoError(t, err)
 	require.Len(t, roundTripped, 2)
 	assert.Equal(t, "#FF0000", roundTripped[0].Color)
 	assert.Equal(t, "Prod", roundTripped[0].Label)

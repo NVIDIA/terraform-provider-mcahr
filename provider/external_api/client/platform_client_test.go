@@ -18,6 +18,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -147,6 +148,90 @@ func TestPlatformClientExecuteRequestServerErrorRetry(t *testing.T) {
 	expectedBody := `{"result": "success after retry"}`
 	if string(response.Body) != expectedBody {
 		t.Errorf("expected body %s, got %s", expectedBody, string(response.Body))
+	}
+}
+
+func TestPlatformClientExecuteRequestRetriesResendTheBody(t *testing.T) {
+	t.Parallel()
+
+	// given: the first two attempts fail, so the request is sent three times
+	const payload = `{"statement":"define_action(action_name=\"a\")"}`
+
+	requestCount := 0
+	receivedBodies := []string{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("failed to read request body on attempt %d: %v", requestCount, err)
+		}
+		receivedBodies = append(receivedBodies, string(body))
+
+		if requestCount <= 2 {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("Internal Server Error"))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"result": "ok"}`))
+	}))
+	defer server.Close()
+
+	platformClient := NewPlatformClient(server.URL, "test-api-token")
+	request := &PlatformClientRequest{
+		Method:   "POST",
+		Endpoint: "/test",
+		Body:     strings.NewReader(payload),
+	}
+
+	// when
+	_, err := platformClient.ExecuteRequest(common.NewRequestContext(context.Background()), request)
+
+	// then: every attempt must carry the payload. The body used to be a
+	// single-use reader drained by attempt 1, so retries arrived empty and the
+	// write silently became a no-op.
+	if err != nil {
+		t.Fatalf("unexpected error after retries: %v", err)
+	}
+	if requestCount != 3 {
+		t.Fatalf("expected 3 requests (2 failures + 1 success), got %d", requestCount)
+	}
+	for attempt, body := range receivedBodies {
+		if body != payload {
+			t.Errorf("attempt %d received body %q, want %q", attempt+1, body, payload)
+		}
+	}
+}
+
+func TestPlatformClientExecuteRequestNilBodySendsNoBody(t *testing.T) {
+	t.Parallel()
+
+	// given
+	var contentLength int64 = -1
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contentLength = r.ContentLength
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"result": "ok"}`))
+	}))
+	defer server.Close()
+
+	platformClient := NewPlatformClient(server.URL, "test-api-token")
+	request := &PlatformClientRequest{
+		Method:   "GET",
+		Endpoint: "/test",
+		Body:     nil,
+	}
+
+	// when
+	_, err := platformClient.ExecuteRequest(common.NewRequestContext(context.Background()), request)
+
+	// then: buffering must not turn a body-less request into an empty-body one
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if contentLength != 0 {
+		t.Errorf("expected no request body (ContentLength 0), got %d", contentLength)
 	}
 }
 

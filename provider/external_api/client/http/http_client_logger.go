@@ -16,6 +16,7 @@
 package http_client
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 	"terraform/terraform-provider/provider/common"
@@ -70,6 +71,93 @@ func isSecurityHeader(keyLower string) bool {
 	return false
 }
 
+// sensitiveBodyFields are JSON field-name fragments whose values are masked
+// before a request or response body is written to the debug log. Matching is
+// substring-based on the lowercased key, so api_key also covers apiKey,
+// nested_api_key and similar spellings the backend may use.
+var sensitiveBodyFields = []string{
+	"api_key",
+	"apikey",
+	"api_certificate",
+	"certificate",
+	"client_secret",
+	"credentials",
+	"external_value",
+	"password",
+	"presigned",
+	"private_key",
+	"secret",
+	"token",
+}
+
+const redactedPlaceholder = "***REDACTED***"
+
+// isSensitiveBodyField reports whether a JSON key names a value that must not
+// be written to the log.
+func isSensitiveBodyField(key string) bool {
+	keyLower := strings.ToLower(key)
+	for _, field := range sensitiveBodyFields {
+		if strings.Contains(keyLower, field) {
+			return true
+		}
+	}
+	return false
+}
+
+// redactSensitiveBody masks credential-bearing values in a JSON body so debug
+// logging does not write them to disk.
+//
+// The provider relays integration credentials, SMTP passwords, secret metadata
+// and presigned storage URLs, and the README documents enabling <PREFIX>_DEBUG
+// with TF_LOG_PATH as routine troubleshooting -- default /tmp/tf-provider.log,
+// a predictable path on shared workstations and CI runners. Masking the header
+// alone was never enough, because the same material travels in the body.
+//
+// Fails closed: a body that is not JSON is replaced wholesale rather than
+// logged, since its structure cannot be inspected for credentials.
+func redactSensitiveBody(body []byte) string {
+	if len(body) == 0 {
+		return ""
+	}
+
+	var parsed any
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return redactedPlaceholder + " (non-JSON body)"
+	}
+
+	redacted, err := json.Marshal(redactValue(parsed))
+	if err != nil {
+		return redactedPlaceholder + " (unencodable body)"
+	}
+
+	return string(redacted)
+}
+
+// redactValue walks a decoded JSON document and masks the values of any keys
+// naming credential material, at any depth.
+func redactValue(value any) any {
+	switch typed := value.(type) {
+	case map[string]any:
+		result := make(map[string]any, len(typed))
+		for key, nested := range typed {
+			if isSensitiveBodyField(key) {
+				result[key] = redactedPlaceholder
+				continue
+			}
+			result[key] = redactValue(nested)
+		}
+		return result
+	case []any:
+		result := make([]any, len(typed))
+		for i, nested := range typed {
+			result[i] = redactValue(nested)
+		}
+		return result
+	default:
+		return value
+	}
+}
+
 // logRequest logs basic HTTP request information at info level
 func (h *HTTPClient) logRequest(requestCtx *common.RequestContext, req *http.Request) {
 	logFields := map[string]any{
@@ -94,9 +182,9 @@ func (h *HTTPClient) logRequestDetails(requestCtx *common.RequestContext, req *h
 		logFields["query_params"] = req.URL.Query()
 	}
 
-	// Add request body if present
+	// Add request body if present, with credential fields masked
 	if len(body) > 0 {
-		logFields["request_body"] = string(body)
+		logFields["request_body"] = redactSensitiveBody(body)
 		logFields["request_body_size"] = len(body)
 	}
 
@@ -131,9 +219,9 @@ func (h *HTTPClient) logResponseDetails(requestCtx *common.RequestContext, resp 
 		"headers":     filterSecurityHeaders(resp.Header),
 	}
 
-	// Add response body
+	// Add response body, with credential fields masked
 	if len(body) > 0 {
-		logFields["response_body"] = string(body)
+		logFields["response_body"] = redactSensitiveBody(body)
 		logFields["response_body_size"] = len(body)
 	}
 

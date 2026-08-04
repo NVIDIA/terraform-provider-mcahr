@@ -68,7 +68,7 @@ If a bearer token is supplied in provider configuration rather than through envi
 
 ### 2. Credential exposure through provider debug logging
 
-With debug logging enabled — via `MCAHR_DEBUG`, `TF_LOG`, or `TF_LOG_PROVIDER` — the provider records full HTTP request and response bodies. Authorization headers are masked; bodies are not, and they carry the configuration being applied, including integration credentials. Treat provider debug logs as secret material and avoid enabling them in shared CI environments.
+With debug logging enabled — via `MCAHR_DEBUG`, `TF_LOG`, or `TF_LOG_PROVIDER` — the provider records HTTP request and response bodies. Authorization headers are masked, and fields whose names identify credential material — API keys, client secrets, certificates, passwords, tokens, secret values and presigned storage URLs — are masked inside those bodies as well; a body that is not JSON is dropped rather than logged. The masking is name-based, so a credential returned under an unrecognised field name would still be recorded. Treat provider debug logs as secret material and avoid enabling them in shared CI environments.
 
 ### 3. Malicious or unsafe command content from imported modules
 
@@ -86,13 +86,23 @@ A compromise affecting release automation, signing material, or artifact publica
 
 If resource values representing secrets are persisted in Terraform state or other shared backend artifacts, users with read access to those systems may gain access to sensitive data.
 
+Credential attributes on the integration resource — API keys, client secrets, certificates, service-account credentials and SMTP passwords — are declared `Sensitive`, so Terraform redacts them in plan and apply output and in CI job logs. They are still written to state unredacted, and the provider encrypts nothing at rest, so state remains secret-bearing regardless.
+
 ### 7. Remote file fetch initiated by the provider
 
-An `input_file` value beginning with `http:` or `https://` is fetched by the provider from the machine running Terraform, and its content is then uploaded to platform storage. In CI this can reach internal services not otherwise exposed, so an unreviewed module that sets `input_file` can both probe internal endpoints and relay their content outward. The platform bearer credential is not attached to this request.
+An `input_file` value beginning with `https://` is fetched by the provider from the machine running Terraform, and its content is then uploaded to platform storage. In CI this can reach internal services not otherwise exposed, so an unreviewed module that sets `input_file` can both probe internal endpoints and relay their content outward. The platform bearer credential is not attached to this request.
+
+Plaintext `http://` sources are rejected, so the fetched content cannot be chosen by a network-position attacker without also breaking TLS. There is no destination allowlist, so treat `input_file` values from modules you did not write as untrusted.
 
 ### 8. Network-path interception against the configured API endpoint
 
 The provider depends on standard TLS protections for communication with the configured backend endpoint. If operators direct the provider to an untrusted endpoint or execute it in a compromised network environment, authenticated traffic may be exposed.
+
+### 9. Destructive rollback after a failed create
+
+When a create request is accepted by the backend but a later step of the same apply fails — response conversion, plan-consistency checking, or post-processing — the provider attempts to delete the resource again so the apply does not leave a partially created object behind.
+
+That rollback establishes only that the create request succeeded, not that it brought the object into existence. If a resource of that name already existed and the platform treated the create as an update, the rollback deletes an object your configuration did not create. Operators managing resources whose names may already exist on the platform should review state carefully after a failed apply.
 
 ## Critical Security Assumptions
 

@@ -99,31 +99,18 @@ func (c *CellJsonAPI) SetFromMap(cell map[string]interface{}) {
 	c.Description = DefaultCellDescription
 
 	// Override with values from map if present
-	if name, ok := cell["name"]; ok {
-		c.Name = name.(string)
-	}
+	c.Name = stringOrKeep(cell, "name", c.Name)
 
-	if content, ok := cell["content"]; ok {
-		c.Content = content.(string)
-	}
+	c.Content = stringOrKeep(cell, "content", c.Content)
 
-	if enabled, ok := cell["enabled"]; ok {
-		c.Enabled = enabled.(bool)
-	}
+	c.Enabled = boolOrKeep(cell, "enabled", c.Enabled)
 
-	if cellType, ok := cell["type"]; ok {
-		c.CellType = cellType.(string)
-	} else if cellType, ok := cell["cell_type"]; ok {
-		c.CellType = cellType.(string)
-	}
+	// Prefer "type", falling back to the older "cell_type" spelling.
+	c.CellType = stringOrKeep(cell, "type", stringOrKeep(cell, "cell_type", c.CellType))
 
-	if secretAware, ok := cell["secret_aware"]; ok {
-		c.SecretAware = secretAware.(bool)
-	}
+	c.SecretAware = boolOrKeep(cell, "secret_aware", c.SecretAware)
 
-	if description, ok := cell["description"]; ok {
-		c.Description = description.(string)
-	}
+	c.Description = stringOrKeep(cell, "description", c.Description)
 }
 
 // CellJson is the internal model for a cell
@@ -226,25 +213,17 @@ func (c *CellJson) UnmarshalJSON(b []byte) error {
 	result := commonstruct.ApplyCustomStructTags(*aux, options)
 
 	// Set in the final struct the values from the processed data
-	if name, ok := result["name"]; ok {
-		c.Name = name.(string)
-	}
+	c.Name = stringOrKeep(result, "name", c.Name)
 
 	// Use aux values directly since they're already properly typed
 	c.Op = aux.Op
 	c.Md = aux.Md
 
-	if enabled, ok := result["enabled"]; ok {
-		c.Enabled = enabled.(bool)
-	}
+	c.Enabled = boolOrKeep(result, "enabled", c.Enabled)
 
-	if description, ok := result["description"]; ok {
-		c.Description = description.(string)
-	}
+	c.Description = stringOrKeep(result, "description", c.Description)
 
-	if secretAware, ok := result["secret_aware"]; ok {
-		c.SecretAware = secretAware.(bool)
-	}
+	c.SecretAware = boolOrKeep(result, "secret_aware", c.SecretAware)
 
 	return nil
 }

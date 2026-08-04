@@ -18,11 +18,13 @@ package translator
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"terraform/terraform-provider/provider/common"
 	subscriptionsapi "terraform/terraform-provider/provider/external_api/resources/smtp_subscription"
 	"terraform/terraform-provider/provider/external_api/resources/statement"
 	"terraform/terraform-provider/provider/tf/core/translator"
+	utils "terraform/terraform-provider/provider/tf/core/translator"
 	smtp_subscriptiontf "terraform/terraform-provider/provider/tf/resource/smtp_subscription/model"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -85,7 +87,10 @@ func toTFFilters(apiFilters []subscriptionsapi.SmtpSubscriptionFilter) types.Lis
 // ToAPIModelWithVersion converts a TF model to an API model with specified backend version
 func (t *SmtpSubscriptionTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *smtp_subscriptiontf.SmtpSubscriptionTFModel) (*statement.InputAPIModel, error) {
 	// Build API request using the existing API model types
-	apiRequest := toAPIRequest(requestContext.Context, tfModel)
+	apiRequest, err := toAPIRequest(requestContext.Context, tfModel)
+	if err != nil {
+		return nil, err
+	}
 
 	// Add ID for Update/Delete operations
 	switch requestContext.Operation {
@@ -106,13 +111,19 @@ func (t *SmtpSubscriptionTranslatorCommon) ToAPIModelWithVersion(requestContext 
 
 // toAPIRequest converts TF model to API request struct
 // Using the existing API model types for automatic JSON serialization
-func toAPIRequest(ctx context.Context, tfModel *smtp_subscriptiontf.SmtpSubscriptionTFModel) *subscriptionsapi.SmtpSubscriptionUpdateRequest {
-	// Extract recipients as []string
-	var recipients []string
-	tfModel.Recipients.ElementsAs(ctx, &recipients, false)
+func toAPIRequest(ctx context.Context, tfModel *smtp_subscriptiontf.SmtpSubscriptionTFModel) (*subscriptionsapi.SmtpSubscriptionUpdateRequest, error) {
+	// Extract recipients as []string. A conversion failure must abort rather
+	// than send an empty recipients list, which would silently stop delivery.
+	recipients, err := utils.ListSliceFromTFModel(ctx, tfModel.Recipients)
+	if err != nil {
+		return nil, fmt.Errorf("attribute \"recipients\": %w", err)
+	}
 
 	// Extract filters and convert to API type
-	filters := toAPIFilters(ctx, tfModel.Filters)
+	filters, err := toAPIFilters(ctx, tfModel.Filters)
+	if err != nil {
+		return nil, err
+	}
 
 	// Use pointer for optional bool
 	enabled := tfModel.Enabled.ValueBool()
@@ -124,13 +135,17 @@ func toAPIRequest(ctx context.Context, tfModel *smtp_subscriptiontf.SmtpSubscrip
 		Recipients:      recipients,
 		Filters:         filters,
 		Enabled:         &enabled,
-	}
+	}, nil
 }
 
 // toAPIFilters converts TF filter models to API filter structs
-func toAPIFilters(ctx context.Context, filtersList types.List) []subscriptionsapi.SmtpSubscriptionFilter {
+func toAPIFilters(ctx context.Context, filtersList types.List) ([]subscriptionsapi.SmtpSubscriptionFilter, error) {
 	var filtersTF []smtp_subscriptiontf.FilterTFModel
-	filtersList.ElementsAs(ctx, &filtersTF, false)
+	if !filtersList.IsNull() && !filtersList.IsUnknown() {
+		if diags := filtersList.ElementsAs(ctx, &filtersTF, false); diags.HasError() {
+			return nil, fmt.Errorf("attribute \"filters\": %s", diags.Errors())
+		}
+	}
 
 	filters := make([]subscriptionsapi.SmtpSubscriptionFilter, len(filtersTF))
 	for i, f := range filtersTF {
@@ -140,5 +155,5 @@ func toAPIFilters(ctx context.Context, filtersList types.List) []subscriptionsap
 			Status:   f.Status.ValueString(),
 		}
 	}
-	return filters
+	return filters, nil
 }

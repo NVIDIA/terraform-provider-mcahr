@@ -70,7 +70,7 @@ func (a *IntegrationTranslatorCommon) buildCreateStatement(requestContext *commo
 
 func (a *IntegrationTranslatorCommon) buildReadStatement(tfModel *integrationtf.IntegrationTFModel) string {
 	name := tfModel.Name.ValueString()
-	return fmt.Sprintf("get_integration_class(integration_name=\"%s\")", name)
+	return fmt.Sprintf("get_integration_class(integration_name=%s)", utils.EscapeString(name))
 }
 
 func (a *IntegrationTranslatorCommon) buildUpdateStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *integrationtf.IntegrationTFModel) (string, error) {
@@ -79,7 +79,7 @@ func (a *IntegrationTranslatorCommon) buildUpdateStatement(requestContext *commo
 
 func (a *IntegrationTranslatorCommon) buildDeleteStatement(tfModel *integrationtf.IntegrationTFModel) string {
 	name := tfModel.Name.ValueString()
-	return fmt.Sprintf("delete_integration(integration_name=\"%s\")", name)
+	return fmt.Sprintf("delete_integration(integration_name=%s)", utils.EscapeString(name))
 }
 
 func (a *IntegrationTranslatorCommon) buildIntegrationStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, statementName string, tfModel *integrationtf.IntegrationTFModel) (string, error) {

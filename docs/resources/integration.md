@@ -24,15 +24,15 @@ Integration resource for configuring integrations with external services
 ### Optional
 
 - `address` (String) The address of the integration
-- `api_certificate` (String) The API certificate of the integration
-- `api_key` (String) The API key of the integration
+- `api_certificate` (String, Sensitive) The API certificate of the integration
+- `api_key` (String, Sensitive) The API key of the integration
 - `api_rate_limit` (Number) The API rate limit of the integration
 - `api_url` (String) The API URL of the integration
 - `cache_ttl` (Number, Deprecated) **Deprecated** Use `cache_ttl_ms` instead.
 - `cache_ttl_ms` (Number) The cache TTL of the integration in milliseconds
 - `client_id` (String) The client ID of the integration
-- `client_secret` (String) The client secret of the integration
-- `credentials` (String) The credentials of the integration
+- `client_secret` (String, Sensitive) The client secret of the integration
+- `credentials` (String, Sensitive) The credentials of the integration
 - `enabled` (Boolean) Whether the integration is enabled
 - `external_url` (String) The external URL of the integration
 - `idp_name` (String) The IDP name of the integration

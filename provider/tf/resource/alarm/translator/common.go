@@ -59,7 +59,7 @@ func (a *AlarmTranslatorCommon) buildCreateStatement(requestContext *common.Requ
 
 func (a *AlarmTranslatorCommon) buildReadStatement(tfModel *alarmtf.AlarmTFModel) string {
 	name := tfModel.Name.ValueString()
-	return fmt.Sprintf("get_alarm_class(alarm_name=\"%s\")", name)
+	return fmt.Sprintf("get_alarm_class(alarm_name=%s)", utils.EscapeString(name))
 }
 
 func (a *AlarmTranslatorCommon) buildUpdateStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *alarmtf.AlarmTFModel) string {
@@ -68,7 +68,7 @@ func (a *AlarmTranslatorCommon) buildUpdateStatement(requestContext *common.Requ
 
 func (a *AlarmTranslatorCommon) buildDeleteStatement(tfModel *alarmtf.AlarmTFModel) string {
 	name := tfModel.Name.ValueString()
-	return fmt.Sprintf("delete_alarm(alarm_name=\"%s\")", name)
+	return fmt.Sprintf("delete_alarm(alarm_name=%s)", utils.EscapeString(name))
 }
 
 func (a *AlarmTranslatorCommon) buildAlarmStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, statementName string, tfModel *alarmtf.AlarmTFModel) string {

@@ -24,11 +24,23 @@ import (
 )
 
 func GetStringOrEmpty(requestContext *common.RequestContext, integrationData map[string]interface{}, key string) types.String {
-	if value, ok := integrationData[key]; ok {
-		return types.StringValue(value.(string))
-	} else {
+	value, ok := integrationData[key]
+	if !ok {
 		return types.StringValue("")
 	}
+
+	// Comma-ok, matching GetInt64OrZero and StringListFromMap below. A bare
+	// assertion here panicked the provider process whenever the backend
+	// returned an integration field as a number, null or object instead of a
+	// string -- an opaque plugin crash rather than a diagnostic.
+	stringValue, ok := value.(string)
+	if !ok {
+		log.LogError(requestContext, "failed to handle integration field (not a string): ", map[string]interface{}{"key": key, "value": value})
+
+		return types.StringValue("")
+	}
+
+	return types.StringValue(stringValue)
 }
 
 func GetInt64OrZero(requestContext *common.RequestContext, integrationData map[string]interface{}, key string) types.Int64 {

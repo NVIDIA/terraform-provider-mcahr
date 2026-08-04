@@ -55,7 +55,12 @@ func (s *NVaultSecretSchema) GetSchema() schema.Schema {
 
 	builder.AddAttribute("integration_name", schema.StringAttribute{
 		Required:            true,
-		MarkdownDescription: "The name/symbol of a platform integration.",
+		MarkdownDescription: "The name/symbol of a platform integration (must be unique, only alphanumeric/underscore).",
+		// Names an integration, so the same constraint applies as to any
+		// other entity name. Defence in depth for the external_value payload:
+		// the value is JSON-encoded before it reaches the statement, but
+		// there is no reason to accept a name the platform cannot hold.
+		Validators: []validator.String{validators.NameValidator()},
 	})
 
 	return builder.Build()

@@ -18,13 +18,45 @@ package apiresponsediff
 import (
 	"strings"
 	"terraform/terraform-provider/provider/common"
+	"terraform/terraform-provider/provider/common/attribute"
 	"terraform/terraform-provider/provider/tf/core/process"
+	coremodel "terraform/terraform-provider/provider/tf/core/schema"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	tfschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// testSchema stands in for a resource schema, declaring the named attributes
+// as sensitive and everything else as ordinary strings.
+type testSchema struct {
+	sensitiveAttributes []string
+}
+
+var _ coremodel.ResourceSchema = &testSchema{}
+
+func (s *testSchema) GetSchema() tfschema.Schema {
+	attributes := map[string]tfschema.Attribute{}
+	for _, name := range s.sensitiveAttributes {
+		attributes[name] = tfschema.StringAttribute{Optional: true, Sensitive: true}
+	}
+	return tfschema.Schema{Attributes: attributes}
+}
+
+func (s *testSchema) GetCompatibilityOptions() map[string]attribute.CompatibilityOptions {
+	return map[string]attribute.CompatibilityOptions{}
+}
+
+func (s *testSchema) GetFieldComparisonRules() map[string]coremodel.FieldComparisonRule {
+	return coremodel.DefaultFieldComparisonRules()
+}
+
+// noSensitiveSchema is the default for tests that are not about redaction.
+func noSensitiveSchema() coremodel.ResourceSchema {
+	return &testSchema{}
+}
 
 func TestAddWarningsToDiagnostics_CreateOperation(t *testing.T) {
 	requestContext := &common.RequestContext{
@@ -43,7 +75,7 @@ func TestAddWarningsToDiagnostics_CreateOperation(t *testing.T) {
 		},
 	}
 
-	addWarningsToDiagnostics(requestContext, processData, differences)
+	addWarningsToDiagnostics(requestContext, processData, differences, noSensitiveSchema())
 
 	assert.True(t, processData.CreateResponse.Diagnostics.HasError() || len(processData.CreateResponse.Diagnostics.Warnings()) > 0)
 	warnings := processData.CreateResponse.Diagnostics.Warnings()
@@ -69,7 +101,7 @@ func TestAddWarningsToDiagnostics_UpdateOperation(t *testing.T) {
 		},
 	}
 
-	addWarningsToDiagnostics(requestContext, processData, differences)
+	addWarningsToDiagnostics(requestContext, processData, differences, noSensitiveSchema())
 
 	warnings := processData.UpdateResponse.Diagnostics.Warnings()
 	require.Len(t, warnings, 1)
@@ -91,7 +123,7 @@ func TestAddWarningsToDiagnostics_NilDiagnostics(t *testing.T) {
 		},
 	}
 
-	addWarningsToDiagnostics(requestContext, processData, differences)
+	addWarningsToDiagnostics(requestContext, processData, differences, noSensitiveSchema())
 }
 
 func TestAddWarningsToDiagnostics_MultipleDifferences(t *testing.T) {
@@ -121,7 +153,7 @@ func TestAddWarningsToDiagnostics_MultipleDifferences(t *testing.T) {
 		},
 	}
 
-	addWarningsToDiagnostics(requestContext, processData, differences)
+	addWarningsToDiagnostics(requestContext, processData, differences, noSensitiveSchema())
 
 	warnings := processData.CreateResponse.Diagnostics.Warnings()
 	require.Len(t, warnings, 1)
@@ -129,6 +161,54 @@ func TestAddWarningsToDiagnostics_MultipleDifferences(t *testing.T) {
 	assert.Contains(t, warnings[0].Detail(), "field1")
 	assert.Contains(t, warnings[0].Detail(), "field2")
 	assert.Contains(t, warnings[0].Detail(), "field3")
+}
+
+func TestAddWarningsToDiagnostics_RedactsSensitiveValues(t *testing.T) {
+	requestContext := &common.RequestContext{
+		Operation: common.Create,
+	}
+
+	processData := &process.ProcessData{
+		CreateResponse: &resource.CreateResponse{},
+	}
+
+	differences := []fieldDifference{
+		{
+			FieldName:     "api_key",
+			PlanValue:     "plan-secret-value",
+			ResponseValue: "api-secret-value",
+		},
+		{
+			FieldName:     "name",
+			PlanValue:     "my_integration",
+			ResponseValue: "my_integration_normalized",
+		},
+	}
+
+	addWarningsToDiagnostics(requestContext, processData, differences,
+		&testSchema{sensitiveAttributes: []string{"api_key"}})
+
+	warnings := processData.CreateResponse.Diagnostics.Warnings()
+	require.Len(t, warnings, 1)
+	detail := warnings[0].Detail()
+
+	// The field is still named, so the operator knows the API changed it.
+	assert.Contains(t, detail, "api_key")
+	assert.Contains(t, detail, redactedValueDisplay)
+	assert.NotContains(t, detail, "plan-secret-value")
+	assert.NotContains(t, detail, "api-secret-value")
+
+	// Non-sensitive fields are unaffected.
+	assert.Contains(t, detail, "my_integration_normalized")
+}
+
+func TestIsSensitiveAttribute(t *testing.T) {
+	attributes := (&testSchema{sensitiveAttributes: []string{"api_key", "client_secret"}}).GetSchema().Attributes
+
+	assert.True(t, isSensitiveAttribute(attributes, "api_key"))
+	assert.True(t, isSensitiveAttribute(attributes, "client_secret"))
+	assert.False(t, isSensitiveAttribute(attributes, "name"))
+	assert.False(t, isSensitiveAttribute(attributes, "not_in_schema"))
 }
 
 func TestGetDiagnostics_CreateOperation(t *testing.T) {
@@ -484,7 +564,7 @@ func TestAddWarningsToDiagnostics_EmptyValues(t *testing.T) {
 		},
 	}
 
-	addWarningsToDiagnostics(requestContext, processData, differences)
+	addWarningsToDiagnostics(requestContext, processData, differences, noSensitiveSchema())
 
 	warnings := processData.CreateResponse.Diagnostics.Warnings()
 	require.Len(t, warnings, 1)

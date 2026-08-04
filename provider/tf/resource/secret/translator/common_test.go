@@ -114,13 +114,56 @@ func TestNVaultSecretTranslatorCommon_BuildSecretStatement(t *testing.T) {
 	requestContext := common.NewRequestContext(context.Background()).WithOperation(common.Create).WithAPIVersion(common.V1)
 
 	// When
-	result := translator.buildSecretStatement(requestContext, &coretranslator.TranslationData{}, "define_secret", tfModel)
+	result, err := translator.buildSecretStatement(requestContext, &coretranslator.TranslationData{}, "define_secret", tfModel)
 
 	// Then
+	require.NoError(t, err)
 	expected := "define_secret(" +
 		"secret_name=\"my_secret\", " +
 		"external_value={\"integration_name\":\"vault_prod\",\"vault_secret_path\":\"secrets/app/db\",\"vault_secret_key\":\"password\"})"
 	assert.Equal(t, expected, result)
+}
+
+func TestNVaultSecretTranslatorCommon_BuildSecretStatement_EscapesInjectionAttempt(t *testing.T) {
+	// Given: vault_secret_path carries no schema validator, so a quote reaches
+	// the builder straight from HCL.
+	translator := &NVaultSecretTranslatorCommon{}
+	tfModel := &secrettf.NVaultSecretTFModel{
+		Name:            types.StringValue("my_secret"),
+		VaultSecretPath: types.StringValue(`a"} evil_statement(x="`),
+		VaultSecretKey:  types.StringValue("password"),
+		IntegrationName: types.StringValue("vault_prod"),
+	}
+	requestContext := common.NewRequestContext(context.Background()).WithOperation(common.Create).WithAPIVersion(common.V1)
+
+	// When
+	result, err := translator.buildSecretStatement(requestContext, &coretranslator.TranslationData{}, "define_secret", tfModel)
+
+	// Then: the quote is escaped, so it cannot terminate the JSON string and
+	// append statement syntax.
+	require.NoError(t, err)
+	assert.Contains(t, result, `"vault_secret_path":"a\"} evil_statement(x=\""`)
+	assert.NotContains(t, result, `"a"} evil_statement`)
+}
+
+func TestNVaultSecretTranslatorCommon_BuildSecretStatement_DoesNotHTMLEscape(t *testing.T) {
+	// Given: &, < and > must survive verbatim. encoding/json escapes them to
+	// & and friends by default, which would change the bytes sent.
+	translator := &NVaultSecretTranslatorCommon{}
+	tfModel := &secrettf.NVaultSecretTFModel{
+		Name:            types.StringValue("my_secret"),
+		VaultSecretPath: types.StringValue("secrets/a&b/<c>"),
+		VaultSecretKey:  types.StringValue("password"),
+		IntegrationName: types.StringValue("vault_prod"),
+	}
+	requestContext := common.NewRequestContext(context.Background()).WithOperation(common.Create).WithAPIVersion(common.V1)
+
+	// When
+	result, err := translator.buildSecretStatement(requestContext, &coretranslator.TranslationData{}, "define_secret", tfModel)
+
+	// Then
+	require.NoError(t, err)
+	assert.Contains(t, result, `"vault_secret_path":"secrets/a&b/<c>"`)
 }
 
 func TestNVaultSecretTranslatorCommon_BuildReadStatement(t *testing.T) {

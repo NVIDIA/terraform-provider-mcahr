@@ -61,17 +61,23 @@ func (h *HTTPClient) createRequest(requestContext *common.RequestContext, httpRe
 	return req, nil
 }
 
+// readRequestBody drains the request body so it can be logged, and replaces it
+// with a fresh reader so the request itself still carries it.
 func (h *HTTPClient) readRequestBody(requestContext *common.RequestContext, httpReq *HTTPRequest) ([]byte, error) {
 
-	if httpReq.Body != nil {
-		body, err := io.ReadAll(httpReq.Body)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read request body: %w", err)
-		}
-		// Create new reader with the body content for the actual request
-		httpReq.Body = bytes.NewReader(body)
+	if httpReq.Body == nil {
+		return nil, nil
 	}
-	return nil, nil
+
+	body, err := io.ReadAll(httpReq.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read request body: %w", err)
+	}
+
+	// Create new reader with the body content for the actual request
+	httpReq.Body = bytes.NewReader(body)
+
+	return body, nil
 }
 
 func (h *HTTPClient) Execute(requestContext *common.RequestContext, httpReq *HTTPRequest) (*HTTPResponse, error) {

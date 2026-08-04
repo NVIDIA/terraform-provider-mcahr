@@ -44,7 +44,22 @@ func NewStatementBuilder(statementName string, backendVersion *version.BackendVe
 	}
 }
 
-// SetField adds a field with its value to the statement
+// SetField adds a field with its value to the statement WITHOUT escaping it.
+//
+// This is the raw escape hatch. Build renders the value with %v straight into
+// the statement, so a string passed here reaches the backend parser verbatim:
+// a quote in it terminates the surrounding literal and everything after it is
+// parsed as statement syntax.
+//
+// Use SetStringField for anything that is a string. SetField is only correct
+// for values that cannot carry statement syntax:
+//
+//   - bools and numbers, which is what most callers pass;
+//   - JSON produced by encoding/json, which escapes quotes and backslashes
+//     itself -- integration params (adapter.TFDataToJSON), runbook
+//     params_groups, and the nvault secret external_value all rely on this.
+//
+// Passing an unescaped operator-supplied string here is an injection bug.
 func (b *StatementBuilder) SetField(apiFieldName string, value any, tfFieldName string) *StatementBuilder {
 
 	if b.attrCompatibilityChecker.IsAttributeCompatible(tfFieldName) {
@@ -98,7 +113,11 @@ func (b *StatementBuilder) SetBoolField(apiFieldName string, value bool, tfField
 	return b
 }
 
-// Build constructs the final statement string
+// Build constructs the final statement string.
+//
+// Values are rendered verbatim with %v. Escaping is the responsibility of the
+// Set*Field method that stored them -- SetStringField, SetCommandField,
+// MaybeSetStringField and SetArrayField escape; SetField does not.
 func (b *StatementBuilder) Build() string {
 	var parts []string
 

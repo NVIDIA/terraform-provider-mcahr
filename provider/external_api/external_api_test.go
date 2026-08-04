@@ -473,3 +473,95 @@ func stringPtr(s string) *string {
 func intPtr(i int) *int {
 	return &i
 }
+
+func TestGetSmtpSubscriptionEndpoint(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		operation    common.CrudOperation
+		apiPayload   string
+		wantEndpoint string
+		wantErr      string
+	}{
+		{
+			name:         "create ignores the payload",
+			operation:    common.Create,
+			apiPayload:   `{}`,
+			wantEndpoint: "/api/v1/integrations/smtp/subscriptions",
+		},
+		{
+			name:         "read builds a per-subscription path",
+			operation:    common.Read,
+			apiPayload:   `{"id":"abc-123"}`,
+			wantEndpoint: "/api/v1/integrations/smtp/subscriptions/abc-123",
+		},
+		{
+			// Unescaped, this would walk off the subscriptions endpoint and
+			// send the bearer token to a different API route.
+			name:         "traversal in the id is escaped, not followed",
+			operation:    common.Delete,
+			apiPayload:   `{"id":"../../admin/users"}`,
+			wantEndpoint: "/api/v1/integrations/smtp/subscriptions/..%2F..%2Fadmin%2Fusers",
+		},
+		{
+			name:         "query injection in the id is escaped",
+			operation:    common.Read,
+			apiPayload:   `{"id":"abc?admin=true"}`,
+			wantEndpoint: "/api/v1/integrations/smtp/subscriptions/abc%3Fadmin=true",
+		},
+		{
+			// This used to be an unchecked type assertion, panicking the
+			// provider process rather than returning an error.
+			name:       "non-string id is an error, not a panic",
+			operation:  common.Read,
+			apiPayload: `{"id":42}`,
+			wantErr:    "not a string",
+		},
+		{
+			name:       "null id is an error, not a panic",
+			operation:  common.Read,
+			apiPayload: `{"id":null}`,
+			wantErr:    "not a string",
+		},
+		{
+			name:       "empty id is rejected",
+			operation:  common.Read,
+			apiPayload: `{"id":""}`,
+			wantErr:    "empty",
+		},
+		{
+			name:       "missing id is rejected",
+			operation:  common.Read,
+			apiPayload: `{"name":"my_subscription"}`,
+			wantErr:    "id is not present",
+		},
+		{
+			name:       "malformed payload is rejected",
+			operation:  common.Read,
+			apiPayload: `not json`,
+			wantErr:    "failed to unmarshal",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			requestContext := common.NewRequestContext(context.Background()).
+				WithOperation(tt.operation).
+				WithResourceType("smtp_subscription")
+
+			endpoint, err := getSmtpSubscriptionEndpoint(requestContext, tt.apiPayload)
+
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantEndpoint, endpoint)
+		})
+	}
+}

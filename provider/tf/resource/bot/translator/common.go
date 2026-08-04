@@ -60,7 +60,7 @@ func (t *BotTranslatorCommon) buildCreateStatement(requestContext *common.Reques
 
 func (t *BotTranslatorCommon) buildReadStatement(tfModel *bottf.BotTFModel) string {
 	name := tfModel.Name.ValueString()
-	return fmt.Sprintf("get_bot_class(bot_name=\"%s\")", name)
+	return fmt.Sprintf("get_bot_class(bot_name=%s)", utils.EscapeString(name))
 }
 
 func (t *BotTranslatorCommon) buildUpdateStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *bottf.BotTFModel) string {
@@ -69,7 +69,7 @@ func (t *BotTranslatorCommon) buildUpdateStatement(requestContext *common.Reques
 
 func (t *BotTranslatorCommon) buildDeleteStatement(tfModel *bottf.BotTFModel) string {
 	name := tfModel.Name.ValueString()
-	return fmt.Sprintf("delete_bot(bot_name=\"%s\")", name)
+	return fmt.Sprintf("delete_bot(bot_name=%s)", utils.EscapeString(name))
 }
 
 // parseCommandStatement parses the command using the regex pattern from the schema

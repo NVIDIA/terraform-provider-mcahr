@@ -26,6 +26,8 @@ import (
 	utils "terraform/terraform-provider/provider/tf/core/translator"
 	runbooktf "terraform/terraform-provider/provider/tf/resource/runbook/model"
 	converters "terraform/terraform-provider/provider/tf/resource/runbook/translator/object_converters"
+
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // ActionTranslatorCommon contains shared functionality between V1 and V2 translators
@@ -66,7 +68,7 @@ func (r *RunbookTranslatorCommon) buildCreateStatement(requestContext *common.Re
 
 func (r *RunbookTranslatorCommon) buildReadStatement(tfModel *runbooktf.RunbookTFModel) string {
 	name := tfModel.Name.ValueString()
-	return fmt.Sprintf("get_notebook_class(notebook_name=\"%s\")", name)
+	return fmt.Sprintf("get_notebook_class(notebook_name=%s)", utils.EscapeString(name))
 }
 
 func (r *RunbookTranslatorCommon) buildUpdateStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *runbooktf.RunbookTFModel) (string, error) {
@@ -75,7 +77,7 @@ func (r *RunbookTranslatorCommon) buildUpdateStatement(requestContext *common.Re
 
 func (r *RunbookTranslatorCommon) buildDeleteStatement(tfModel *runbooktf.RunbookTFModel) string {
 	name := tfModel.Name.ValueString()
-	return fmt.Sprintf("delete_notebook(notebook_name=\"%s\")", name)
+	return fmt.Sprintf("delete_notebook(notebook_name=%s)", utils.EscapeString(name))
 }
 
 func (r *RunbookTranslatorCommon) buildRunbookStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, statementName string, tfModel *runbooktf.RunbookTFModel) (string, error) {
@@ -83,6 +85,21 @@ func (r *RunbookTranslatorCommon) buildRunbookStatement(requestContext *common.R
 	// Used for both define_notebook (create) and update_notebook (update) operations
 
 	ctx := requestContext.Context
+
+	// Extract the list attributes up front. A conversion failure must abort
+	// the apply: silently sending an empty allowed_entities or approvers list
+	// would clear the runbook's authorization instead.
+	lists, err := utils.ListSlicesFromTFModel(ctx, map[string]types.List{
+		"allowed_entities": tfModel.AllowedEntities,
+		"approvers":        tfModel.Approvers,
+		"labels":           tfModel.Labels,
+		"editors":          tfModel.Editors,
+		"secret_names":     tfModel.SecretNames,
+	})
+	if err != nil {
+		return "", err
+	}
+
 	// Handle base and set fields
 	builder := utils.NewStatementBuilder(statementName, requestContext.BackendVersion, translationData.CompatibilityOptions).
 		SetStringField("notebook_name", tfModel.Name.ValueString(), "name").
@@ -98,11 +115,11 @@ func (r *RunbookTranslatorCommon) buildRunbookStatement(requestContext *common.R
 		SetField("communication_cud_notifications", tfModel.CommunicationCudNotifications.ValueBool(), "communication_cud_notifications").
 		SetField("communication_approval_notifications", tfModel.CommunicationApprovalNotifications.ValueBool(), "communication_approval_notifications").
 		SetField("communication_execution_notifications", tfModel.CommunicationExecutionNotifications.ValueBool(), "communication_execution_notifications").
-		SetArrayField("allowed_entities", utils.ListSliceFromTFModel(ctx, tfModel.AllowedEntities), "allowed_entities").
-		SetArrayField("approvers", utils.ListSliceFromTFModel(ctx, tfModel.Approvers), "approvers").
-		SetArrayField("labels", utils.ListSliceFromTFModel(ctx, tfModel.Labels), "labels").
-		SetArrayField("editors", utils.ListSliceFromTFModel(ctx, tfModel.Editors), "editors").
-		SetArrayField("secret_names", utils.ListSliceFromTFModel(ctx, tfModel.SecretNames), "secret_names")
+		SetArrayField("allowed_entities", lists["allowed_entities"], "allowed_entities").
+		SetArrayField("approvers", lists["approvers"], "approvers").
+		SetArrayField("labels", lists["labels"], "labels").
+		SetArrayField("editors", lists["editors"], "editors").
+		SetArrayField("secret_names", lists["secret_names"], "secret_names")
 
 	jsonParamsGroups, err := buildParamsGroupsJSON(requestContext, tfModel)
 	if err != nil {

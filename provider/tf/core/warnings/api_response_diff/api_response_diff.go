@@ -50,7 +50,7 @@ func CheckPlanVsApiResponseDelta[TF model.TFModel](requestContext *common.Reques
 	differences := compareModels(planTfModel, apiResponseTfModel, comparisonRules)
 
 	if len(differences) > 0 {
-		addWarningsToDiagnostics(requestContext, processData, differences)
+		addWarningsToDiagnostics(requestContext, processData, differences, schema)
 	}
 
 	return nil

@@ -211,8 +211,9 @@ func TestFileTranslatorCommon_BuildDeleteStatement_SpecialCharacters(t *testing.
 	result := translator.buildDeleteStatement(tfModel)
 
 	// then
-	// The string should be properly escaped
-	assert.Equal(t, "delete_file(name=\"test_file_with_\"quotes\"\")", result)
+	// Embedded quotes must be backslash-escaped so they cannot terminate the
+	// op-lang string literal and append attacker-controlled statement syntax.
+	assert.Equal(t, `delete_file(name="test_file_with_\"quotes\"")`, result)
 }
 
 func TestFileTranslatorCommon_BuildFileStatement(t *testing.T) {
