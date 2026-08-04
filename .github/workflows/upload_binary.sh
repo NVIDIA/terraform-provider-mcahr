@@ -65,7 +65,7 @@ configure_ngc_cli() {
 [CURRENT]
 apikey = ${NGC_API_KEY_CI}
 format_type = ascii
-org = nvidian
+org = 0948254661288589
 EOF
     
     log "NGC CLI configured"
@@ -82,7 +82,7 @@ configure_ngc_cli
 
 resource_ref="$1"
 
-if echo "$resource_ref" | grep -q '^nvidian/'; then
+if echo "$resource_ref" | grep -q '^0948254661288589/'; then
     log "Checking if resource version already exists..."
     
     if ngc registry resource info "$resource_ref" > /dev/null 2>&1; then
