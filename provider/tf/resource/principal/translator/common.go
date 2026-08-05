@@ -59,7 +59,7 @@ func (t *PrincipalTranslatorCommon) buildCreateStatement(requestContext *common.
 
 func (t *PrincipalTranslatorCommon) buildReadStatement(tfModel *principaltf.PrincipalTFModel) string {
 	name := tfModel.Name.ValueString()
-	return fmt.Sprintf("get_principal_class(name=\"%s\")", name)
+	return fmt.Sprintf("get_principal_class(name=%s)", utils.EscapeString(name))
 }
 
 func (t *PrincipalTranslatorCommon) buildUpdateStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *principaltf.PrincipalTFModel) string {
@@ -68,7 +68,7 @@ func (t *PrincipalTranslatorCommon) buildUpdateStatement(requestContext *common.
 
 func (t *PrincipalTranslatorCommon) buildDeleteStatement(tfModel *principaltf.PrincipalTFModel) string {
 	name := tfModel.Name.ValueString()
-	return fmt.Sprintf("delete_principal(principal_name=\"%s\")", name)
+	return fmt.Sprintf("delete_principal(principal_name=%s)", utils.EscapeString(name))
 }
 
 func (t *PrincipalTranslatorCommon) buildPrincipalStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, statementName string, tfModel *principaltf.PrincipalTFModel) string {

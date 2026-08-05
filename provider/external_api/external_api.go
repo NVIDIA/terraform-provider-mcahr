@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"terraform/terraform-provider/provider/common"
 	"terraform/terraform-provider/provider/external_api/client"
@@ -170,11 +171,26 @@ func getSmtpSubscriptionEndpoint(requestContext *common.RequestContext, apiPaylo
 			return "", fmt.Errorf("failed to unmarshal apiPayload: %w", err)
 		}
 		// if id is not present, return an error
-		if _, ok := unmarshaledPayload["id"]; !ok {
+		rawSubscriptionID, ok := unmarshaledPayload["id"]
+		if !ok {
 			return "", fmt.Errorf("id is not present in the apiPayload")
 		}
-		subscriptionID := unmarshaledPayload["id"].(string)
-		return fmt.Sprintf("/api/v1/integrations/smtp/subscriptions/%s", subscriptionID), nil
+
+		// Comma-ok: an unchecked assertion panics when the backend or state
+		// carries id as a number or null, taking the provider process with it.
+		subscriptionID, ok := rawSubscriptionID.(string)
+		if !ok {
+			return "", fmt.Errorf("id in the apiPayload is not a string, got %T", rawSubscriptionID)
+		}
+
+		if subscriptionID == "" {
+			return "", fmt.Errorf("id in the apiPayload is empty")
+		}
+
+		// PathEscape: the ID is interpolated into the request path, so an
+		// unescaped "../" would walk off the subscriptions endpoint and send
+		// the bearer token to a different API route.
+		return fmt.Sprintf("/api/v1/integrations/smtp/subscriptions/%s", url.PathEscape(subscriptionID)), nil
 	default:
 		return "", fmt.Errorf("unknown operation: %v for resource type: %v", requestContext.Operation, requestContext.ResourceType)
 	}

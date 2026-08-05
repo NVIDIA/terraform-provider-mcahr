@@ -20,13 +20,20 @@ import (
 	"strings"
 	"terraform/terraform-provider/provider/common"
 	"terraform/terraform-provider/provider/tf/core/process"
+	coremodel "terraform/terraform-provider/provider/tf/core/schema"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	tfschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
+
+// redactedValueDisplay stands in for the value of a field the schema marks
+// Sensitive. The warning still reports that the field differed -- only the
+// values are withheld.
+const redactedValueDisplay = "(sensitive value redacted)"
 
 // addWarningsToDiagnostics adds warnings to the Terraform diagnostics when plan
 // values differ from API response values.
-func addWarningsToDiagnostics(requestContext *common.RequestContext, processData *process.ProcessData, differences []fieldDifference) {
+func addWarningsToDiagnostics(requestContext *common.RequestContext, processData *process.ProcessData, differences []fieldDifference, resourceSchema coremodel.ResourceSchema) {
 	diagnostics := getDiagnostics(requestContext, processData)
 
 	if diagnostics == nil {
@@ -35,18 +42,43 @@ func addWarningsToDiagnostics(requestContext *common.RequestContext, processData
 
 	summary := fmt.Sprintf("API modified %d field(s)", len(differences))
 
+	attributes := resourceSchema.GetSchema().Attributes
+
 	var details strings.Builder
 	details.WriteString("Plan vs API response:\n\n")
 
 	for _, diff := range differences {
 		details.WriteString(fmt.Sprintf("%s:\n", diff.FieldName))
-		constructDifferenceMessage(&details, diff.PlanValue, diff.ResponseValue)
+
+		// Terraform redacts Sensitive attributes everywhere else it renders
+		// them; this warning is written straight into diagnostics and bypassed
+		// that, printing credentials verbatim into plan output and CI logs.
+		if isSensitiveAttribute(attributes, diff.FieldName) {
+			details.WriteString(fmt.Sprintf("  Plan: %s\n", redactedValueDisplay))
+			details.WriteString(fmt.Sprintf("  API:  %s\n", redactedValueDisplay))
+		} else {
+			constructDifferenceMessage(&details, diff.PlanValue, diff.ResponseValue)
+		}
+
 		details.WriteString("\n")
 	}
 
 	details.WriteString("State will use Plan values.")
 
 	diagnostics.AddWarning(summary, details.String())
+}
+
+// isSensitiveAttribute reports whether the schema marks the named attribute
+// Sensitive. Unknown names are treated as non-sensitive: fieldDifference names
+// come from tfsdk tags, so a miss means the field has no schema attribute at
+// all rather than an undeclared secret.
+func isSensitiveAttribute(attributes map[string]tfschema.Attribute, fieldName string) bool {
+	attribute, ok := attributes[fieldName]
+	if !ok {
+		return false
+	}
+
+	return attribute.IsSensitive()
 }
 
 // getDiagnostics returns the appropriate diagnostics collection for the current operation.

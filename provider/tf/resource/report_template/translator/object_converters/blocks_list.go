@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	customattribute "terraform/terraform-provider/provider/external_api/resources/report_templates/custom_attribute"
+	utils "terraform/terraform-provider/provider/tf/core/translator"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -101,9 +102,17 @@ func BlocksListToInternal(ctx context.Context, tfList types.List) ([]customattri
 			IncludeOtherBreakdownTagValues:  boolAttr(attrs, "include_other_breakdown_tag_values"),
 		}
 
-		block.OtherTagsToExport = stringListAttr(ctx, attrs, "other_tags_to_export")
-		block.GroupByTagOrder = groupByTagOrderFromAttr(ctx, attrs["group_by_tag_order"])
-		block.BreakdownTagsValues = breakdownTagValuesFromAttr(ctx, attrs["breakdown_tags_values"])
+		var err error
+
+		if block.OtherTagsToExport, err = stringListAttr(ctx, attrs, "other_tags_to_export"); err != nil {
+			return nil, fmt.Errorf("block %d: %w", i, err)
+		}
+		if block.GroupByTagOrder, err = groupByTagOrderFromAttr(ctx, attrs["group_by_tag_order"]); err != nil {
+			return nil, fmt.Errorf("block %d: %w", i, err)
+		}
+		if block.BreakdownTagsValues, err = breakdownTagValuesFromAttr(ctx, attrs["breakdown_tags_values"]); err != nil {
+			return nil, fmt.Errorf("block %d: %w", i, err)
+		}
 		block.ResourcesBreakdown = resourcesBreakdownFromAttr(ctx, attrs["resources_breakdown"])
 
 		blocks[i] = block
@@ -185,16 +194,22 @@ func groupByTagOrderToTF(gbo customattribute.GroupByTagOrder) (types.Object, dia
 	})
 }
 
-func groupByTagOrderFromAttr(ctx context.Context, val attr.Value) customattribute.GroupByTagOrder {
+func groupByTagOrderFromAttr(ctx context.Context, val attr.Value) (customattribute.GroupByTagOrder, error) {
 	obj, ok := val.(types.Object)
 	if !ok || obj.IsNull() || obj.IsUnknown() {
-		return customattribute.GroupByTagOrder{Type: "DEFAULT", Values: []string{}}
+		return customattribute.GroupByTagOrder{Type: "DEFAULT", Values: []string{}}, nil
 	}
 	attrs := obj.Attributes()
+
+	values, err := stringListAttr(ctx, attrs, "values")
+	if err != nil {
+		return customattribute.GroupByTagOrder{}, fmt.Errorf("group_by_tag_order: %w", err)
+	}
+
 	return customattribute.GroupByTagOrder{
 		Type:   stringAttr(attrs, "type"),
-		Values: stringListAttr(ctx, attrs, "values"),
-	}
+		Values: values,
+	}, nil
 }
 
 // --- Nested type helpers: BreakdownTagsValues ---
@@ -222,22 +237,27 @@ func breakdownTagValuesToTF(btvs []customattribute.BreakdownTagValue) (types.Lis
 	return types.ListValue(BreakdownTagValueObjectType, objects)
 }
 
-func breakdownTagValuesFromAttr(ctx context.Context, val attr.Value) []customattribute.BreakdownTagValue {
+func breakdownTagValuesFromAttr(ctx context.Context, val attr.Value) ([]customattribute.BreakdownTagValue, error) {
 	list, ok := val.(types.List)
 	if !ok || list.IsNull() || list.IsUnknown() {
-		return []customattribute.BreakdownTagValue{}
+		return []customattribute.BreakdownTagValue{}, nil
 	}
 	result := make([]customattribute.BreakdownTagValue, len(list.Elements()))
 	for i, elem := range list.Elements() {
 		obj := elem.(types.Object)
 		attrs := obj.Attributes()
+		values, err := stringListAttr(ctx, attrs, "values")
+		if err != nil {
+			return nil, fmt.Errorf("breakdown_tags_values[%d]: %w", i, err)
+		}
+
 		result[i] = customattribute.BreakdownTagValue{
 			Color:  stringAttr(attrs, "color"),
 			Label:  stringAttr(attrs, "label"),
-			Values: stringListAttr(ctx, attrs, "values"),
+			Values: values,
 		}
 	}
-	return result
+	return result, nil
 }
 
 // --- Nested type helpers: ResourcesBreakdown ---
@@ -325,11 +345,16 @@ func int64Attr(attrs map[string]attr.Value, key string) int64 {
 	return 0
 }
 
-func stringListAttr(ctx context.Context, attrs map[string]attr.Value, key string) []string {
-	if v, ok := attrs[key].(types.List); ok && !v.IsNull() && !v.IsUnknown() {
-		var result []string
-		v.ElementsAs(ctx, &result, false)
-		return result
+func stringListAttr(ctx context.Context, attrs map[string]attr.Value, key string) ([]string, error) {
+	v, ok := attrs[key].(types.List)
+	if !ok {
+		return []string{}, nil
 	}
-	return []string{}
+
+	result, err := utils.ListSliceFromTFModel(ctx, v)
+	if err != nil {
+		return nil, fmt.Errorf("attribute %q: %w", key, err)
+	}
+
+	return result, nil
 }

@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	customattribute "terraform/terraform-provider/provider/external_api/resources/dashboards/custom_attribute"
+	utils "terraform/terraform-provider/provider/tf/core/translator"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -52,8 +53,10 @@ func GroupsListToInternal(ctx context.Context, tfList types.List) ([]customattri
 
 	groups := make([]customattribute.GroupJson, len(models))
 	for i, m := range models {
-		var tags []string
-		m.Tags.ElementsAs(ctx, &tags, false)
+		tags, err := utils.ListSliceFromTFModel(ctx, m.Tags)
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract tags for group %q: %w", m.Name.ValueString(), err)
+		}
 		groups[i] = customattribute.GroupJson{
 			Name: m.Name.ValueString(),
 			Tags: tags,

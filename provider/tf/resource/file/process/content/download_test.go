@@ -25,6 +25,7 @@ import (
 	"terraform/terraform-provider/provider/tf/core/process"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestShouldDownloadFile(t *testing.T) {
@@ -36,9 +37,11 @@ func TestShouldDownloadFile(t *testing.T) {
 		expected bool
 	}{
 		{
+			// Plaintext http is no longer a download target; it is rejected
+			// outright by maybeDownloadFile. See TestIsPlaintextHTTP.
 			name:     "HTTP URL",
 			inputUrl: "http://example.com/file.txt",
-			expected: true,
+			expected: false,
 		},
 		{
 			name:     "HTTPS URL",
@@ -73,7 +76,7 @@ func TestShouldDownloadFile(t *testing.T) {
 		{
 			name:     "Just http:",
 			inputUrl: "http:",
-			expected: true,
+			expected: false,
 		},
 		{
 			name:     "Just https://",
@@ -93,6 +96,44 @@ func TestShouldDownloadFile(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestIsPlaintextHTTP(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		inputUrl string
+		expected bool
+	}{
+		{name: "HTTP URL", inputUrl: "http://example.com/file.txt", expected: true},
+		{name: "Just http:", inputUrl: "http:", expected: true},
+		{name: "HTTPS URL", inputUrl: "https://example.com/file.txt", expected: false},
+		{name: "Just https://", inputUrl: "https://", expected: false},
+		{name: "Local file path", inputUrl: "/path/to/local/file.txt", expected: false},
+		{name: "Empty string", inputUrl: "", expected: false},
+		{name: "Local path containing http:", inputUrl: "/tmp/http:file", expected: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, tt.expected, isPlaintextHTTP(tt.inputUrl))
+		})
+	}
+}
+
+func TestMaybeDownloadFile_RejectsPlaintextHTTPBeforeAnyNetworkAccess(t *testing.T) {
+	t.Parallel()
+
+	// when: nil context and process data would panic if the URL were fetched
+	result, err := maybeDownloadFile(nil, nil, "http://example.com/file.txt")
+
+	// then
+	require.Error(t, err)
+	assert.Empty(t, result)
+	assert.Contains(t, err.Error(), "must use https://")
 }
 
 func TestMaybeDownloadFile_LocalFile(t *testing.T) {
@@ -149,10 +190,11 @@ func TestMaybeDownloadFile_HTTPUrl(t *testing.T) {
 	fileName, err := maybeDownloadFile(common.NewRequestContext(context.Background()), data, httpUrl)
 
 	// then
-	// This will fail due to network issues, but we can test the error handling
+	// Plaintext http is refused outright rather than fetched: the response
+	// body becomes the stored file, and nothing verifies it.
 	assert.Error(t, err)
 	assert.Empty(t, fileName)
-	assert.Contains(t, err.Error(), "failed to read remote file object")
+	assert.Contains(t, err.Error(), "must use https://")
 }
 
 func TestMaybeDownloadFile_EmptyUrl(t *testing.T) {

@@ -18,6 +18,9 @@ package resource
 import (
 	"context"
 	"fmt"
+	"strings"
+	"unicode"
+
 	"terraform/terraform-provider/provider/common"
 	"terraform/terraform-provider/provider/common/attribute"
 	"terraform/terraform-provider/provider/common/log"
@@ -35,6 +38,9 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 const defaultLogLevel = hclog.Info
@@ -320,8 +326,59 @@ func ExecuteDelete[TF model.TFModel, API_V1 api.APIModel, API_V2 api.APIModel](c
 	})
 }
 
+// importIDForbiddenChars are characters that can terminate an op-language
+// string literal. Values reaching a statement builder from config are
+// constrained by the schema, but an import ID is written straight into state.
+const importIDForbiddenChars = "\"\\"
+
+// validateImportID checks a `terraform import` ID before it is written into
+// the `name` attribute.
+//
+// ImportStatePassthroughID bypasses schema validation entirely -- framework
+// validators run against config, and an import supplies none -- so the import
+// ID was the one path by which an unconstrained value reached the statement
+// builders. Statement sites escape their inputs now, so this is defence in
+// depth rather than the only guard.
+//
+// The resource's own declared validators are applied so import enforces
+// exactly what create enforces, no more: resources that constrain `name` with
+// NameValidator reject anything it rejects, and those that do not (integration,
+// runbook) still reject only characters that would break a statement. Nothing
+// that could previously be created can fail to import.
+func validateImportID(ctx context.Context, importID string, resourceSchema coreschema.ResourceSchema, resp *resource.ImportStateResponse) bool {
+
+	if strings.ContainsAny(importID, importIDForbiddenChars) || strings.ContainsFunc(importID, unicode.IsControl) {
+		resp.Diagnostics.AddError(
+			"Invalid Import ID",
+			fmt.Sprintf("Import ID must not contain quote, backslash or control characters, got: '%s'", importID),
+		)
+		return false
+	}
+
+	nameAttribute, ok := resourceSchema.GetSchema().Attributes["name"]
+	if !ok {
+		return true
+	}
+
+	stringAttribute, ok := nameAttribute.(schema.StringAttribute)
+	if !ok {
+		return true
+	}
+
+	for _, attributeValidator := range stringAttribute.Validators {
+		validatorResponse := &validator.StringResponse{}
+		attributeValidator.ValidateString(ctx, validator.StringRequest{
+			Path:        path.Root("name"),
+			ConfigValue: types.StringValue(importID),
+		}, validatorResponse)
+		resp.Diagnostics.Append(validatorResponse.Diagnostics...)
+	}
+
+	return !resp.Diagnostics.HasError()
+}
+
 // ExecuteImportState performs a common import state operation for resources
-func ExecuteImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse, resourceType string) {
+func ExecuteImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse, resourceType string, resourceSchema coreschema.ResourceSchema) {
 
 	// Create subsystem context on-demand for this resource type with standard persistent fields
 	// For import, we use the import ID as the resource name since that's what we're importing
@@ -336,6 +393,14 @@ func ExecuteImportState(ctx context.Context, req resource.ImportStateRequest, re
 	log.LogInfo(requestCtx, fmt.Sprintf("Starting %s import operation", resourceType), map[string]interface{}{
 		"import_id": req.ID,
 	})
+
+	if !validateImportID(ctx, req.ID, resourceSchema, resp) {
+		log.LogError(requestCtx, fmt.Sprintf("%s import operation failed", resourceType), map[string]any{
+			"import_id": req.ID,
+			"error":     "Import ID rejected by validation",
+		})
+		return
+	}
 
 	// Use the import ID as the resource name for reading the resource
 	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)

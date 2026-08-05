@@ -114,7 +114,7 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 }
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	coreresource.ExecuteImportState(ctx, req, resp, resourceType)
+	coreresource.ExecuteImportState(ctx, req, resp, resourceType, r.schema)
 }
 
 func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {

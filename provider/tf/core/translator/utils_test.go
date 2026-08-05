@@ -22,6 +22,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSetSliceFromTFModel(t *testing.T) {
@@ -65,9 +66,10 @@ func TestSetSliceFromTFModel(t *testing.T) {
 			input := tt.input
 
 			// when
-			result := ListSliceFromTFModel(context.Background(), input)
+			result, err := ListSliceFromTFModel(context.Background(), input)
 
 			// then
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -330,9 +332,10 @@ func TestSetSliceFromTFModel_EdgeCases(t *testing.T) {
 		expected := []string{"normal", "", "with\nnewlines", `with "quotes"`}
 
 		// when
-		result := ListSliceFromTFModel(context.Background(), input)
+		result, err := ListSliceFromTFModel(context.Background(), input)
 
 		// then
+		require.NoError(t, err)
 		assert.Equal(t, expected, result)
 	})
 }
@@ -395,4 +398,67 @@ func TestIntToBool(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestListSliceFromTFModel_ConversionFailureIsNotSwallowed(t *testing.T) {
+	t.Parallel()
+
+	// given: a list whose elements are not strings, so ElementsAs into
+	// []string cannot succeed
+	input, diags := types.ListValue(types.Int64Type, []attr.Value{
+		types.Int64Value(1),
+		types.Int64Value(2),
+	})
+	require.False(t, diags.HasError())
+
+	// when
+	result, err := ListSliceFromTFModel(context.Background(), input)
+
+	// then: the failure surfaces instead of yielding an empty list. Returning
+	// []string{} here sent allowed_entities=[] and cleared the entity's
+	// authorization list rather than failing the apply.
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "failed to convert list elements")
+}
+
+func TestListSlicesFromTFModel_NamesTheFailingAttribute(t *testing.T) {
+	t.Parallel()
+
+	// given
+	good, diags := types.ListValue(types.StringType, []attr.Value{types.StringValue("ok")})
+	require.False(t, diags.HasError())
+
+	bad, diags := types.ListValue(types.Int64Type, []attr.Value{types.Int64Value(1)})
+	require.False(t, diags.HasError())
+
+	// when
+	result, err := ListSlicesFromTFModel(context.Background(), map[string]types.List{
+		"editors":          good,
+		"allowed_entities": bad,
+	})
+
+	// then
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), `attribute "allowed_entities"`)
+}
+
+func TestListSlicesFromTFModel_AllConvertible(t *testing.T) {
+	t.Parallel()
+
+	// given
+	entities, diags := types.ListValue(types.StringType, []attr.Value{types.StringValue("user_a")})
+	require.False(t, diags.HasError())
+
+	// when
+	result, err := ListSlicesFromTFModel(context.Background(), map[string]types.List{
+		"allowed_entities": entities,
+		"editors":          types.ListNull(types.StringType),
+	})
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, []string{"user_a"}, result["allowed_entities"])
+	assert.Nil(t, result["editors"])
 }

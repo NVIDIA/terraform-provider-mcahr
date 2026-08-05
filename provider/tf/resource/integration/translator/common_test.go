@@ -268,6 +268,17 @@ func TestIntegrationTranslatorCommon_BuildReadStatement(t *testing.T) {
 			},
 			expected: `get_integration_class(integration_name="")`,
 		},
+		{
+			// The integration schema puts no NameValidator on `name`, so a
+			// quote character reaches this builder from HCL. It must be
+			// escaped rather than closing the literal and appending a
+			// second statement.
+			name: "Integration name attempting statement injection",
+			tfModel: &integrationtf.IntegrationTFModel{
+				Name: types.StringValue(`x") delete_integration(integration_name="y`),
+			},
+			expected: `get_integration_class(integration_name="x\") delete_integration(integration_name=\"y")`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -372,6 +383,13 @@ func TestIntegrationTranslatorCommon_BuildDeleteStatement(t *testing.T) {
 				Name: types.StringValue(""),
 			},
 			expected: `delete_integration(integration_name="")`,
+		},
+		{
+			name: "Delete with name attempting statement injection",
+			tfModel: &integrationtf.IntegrationTFModel{
+				Name: types.StringValue(`x") delete_integration(integration_name="y`),
+			},
+			expected: `delete_integration(integration_name="x\") delete_integration(integration_name=\"y")`,
 		},
 	}
 

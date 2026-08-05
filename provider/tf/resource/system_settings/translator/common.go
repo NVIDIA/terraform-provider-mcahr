@@ -31,20 +31,24 @@ type SystemSettingsTranslatorCommon struct{}
 // ToAPIModelWithVersion converts a TF model to an API model with specified backend version
 func (t *SystemSettingsTranslatorCommon) ToAPIModelWithVersion(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *systemsettingstf.SystemSettingsTFModel) (*statement.InputAPIModel, error) {
 	var stmt string
+	var err error
 
 	switch requestContext.Operation {
 	case common.Create:
 		// For system_settings, create uses update statement
-		stmt = t.buildUpdateStatement(requestContext, translationData, tfModel)
+		stmt, err = t.buildUpdateStatement(requestContext, translationData, tfModel)
 	case common.Read:
 		stmt = t.buildReadStatement(tfModel)
 	case common.Update:
-		stmt = t.buildUpdateStatement(requestContext, translationData, tfModel)
+		stmt, err = t.buildUpdateStatement(requestContext, translationData, tfModel)
 	case common.Delete:
 		// system_settings doesn't support delete
 		return nil, fmt.Errorf("delete operation is not supported for system_settings resource")
 	default:
 		return nil, fmt.Errorf("unsupported operation: %v", requestContext.Operation)
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	apiModel := &statement.InputAPIModel{
@@ -57,10 +61,10 @@ func (t *SystemSettingsTranslatorCommon) ToAPIModelWithVersion(requestContext *c
 
 func (t *SystemSettingsTranslatorCommon) buildReadStatement(tfModel *systemsettingstf.SystemSettingsTFModel) string {
 	name := tfModel.Name.ValueString()
-	return fmt.Sprintf("get_configuration_class(configuration_name=\"%s\")", name)
+	return fmt.Sprintf("get_configuration_class(configuration_name=%s)", utils.EscapeString(name))
 }
 
-func (t *SystemSettingsTranslatorCommon) buildUpdateStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *systemsettingstf.SystemSettingsTFModel) string {
+func (t *SystemSettingsTranslatorCommon) buildUpdateStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *systemsettingstf.SystemSettingsTFModel) (string, error) {
 	// Build the update_configuration statement from the TF model using the builder pattern
 	builder := utils.NewStatementBuilder("update_configuration", requestContext.BackendVersion, translationData.CompatibilityOptions).
 		SetStringField("configuration_name", tfModel.Name.ValueString(), "name")
@@ -88,13 +92,23 @@ func (t *SystemSettingsTranslatorCommon) buildUpdateStatement(requestContext *co
 		SetField("maintenance_mode_enabled", tfModel.MaintenanceModeEnabled.ValueBool(), "maintenance_mode_enabled").
 		SetStringField("managed_secrets", tfModel.ManagedSecrets.ValueString(), "managed_secrets")
 
-	// Handle string sets - only add to statement if explicitly set (not null/unknown)
+	// Handle string sets - only add to statement if explicitly set (not null/unknown).
+	// A conversion failure aborts rather than sending an empty tag list, which
+	// would silently widen or narrow what the platform acts on.
 	if common.IsAttrKnown(tfModel.AllowedTags) {
-		builder = builder.SetArrayField("allowed_tags", utils.ListSliceFromTFModel(requestContext.Context, tfModel.AllowedTags), "allowed_tags")
+		allowedTags, err := utils.ListSliceFromTFModel(requestContext.Context, tfModel.AllowedTags)
+		if err != nil {
+			return "", fmt.Errorf("attribute \"allowed_tags\": %w", err)
+		}
+		builder = builder.SetArrayField("allowed_tags", allowedTags, "allowed_tags")
 	}
 	if common.IsAttrKnown(tfModel.SkippedTags) {
-		builder = builder.SetArrayField("skipped_tags", utils.ListSliceFromTFModel(requestContext.Context, tfModel.SkippedTags), "skipped_tags")
+		skippedTags, err := utils.ListSliceFromTFModel(requestContext.Context, tfModel.SkippedTags)
+		if err != nil {
+			return "", fmt.Errorf("attribute \"skipped_tags\": %w", err)
+		}
+		builder = builder.SetArrayField("skipped_tags", skippedTags, "skipped_tags")
 	}
 
-	return builder.Build()
+	return builder.Build(), nil
 }

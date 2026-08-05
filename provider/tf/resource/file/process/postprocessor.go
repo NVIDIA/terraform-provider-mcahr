@@ -23,6 +23,7 @@ import (
 	filesapi "terraform/terraform-provider/provider/external_api/resources/files"
 	corehelper "terraform/terraform-provider/provider/tf/core/helper"
 	"terraform/terraform-provider/provider/tf/core/process"
+	utils "terraform/terraform-provider/provider/tf/core/translator"
 	filetf "terraform/terraform-provider/provider/tf/resource/file/model"
 	"terraform/terraform-provider/provider/tf/resource/file/process/upload"
 
@@ -92,11 +93,15 @@ func handleV1DeferredUpload(requestContext *common.RequestContext, data *process
 		return err
 	}
 
-	// Update file_data and restore enabled to original value
+	// Update file_data and restore enabled to original value.
+	//
+	// Both interpolations are escaped: uri is a backend-supplied value, so a
+	// quote in it would otherwise close the file_data literal and append
+	// statement syntax that the backend then executes under the caller's token.
 	fileDataValue := fmt.Sprintf(":%s", uri)
 	updateStmt := fmt.Sprintf(
-		"update_file(name=\"%s\", file_data=\"%s\", enabled=%v)",
-		name, fileDataValue, originalEnabled,
+		"update_file(name=%s, file_data=%s, enabled=%v)",
+		utils.EscapeString(name), utils.EscapeString(fileDataValue), originalEnabled,
 	)
 	_, err = corehelper.RunOpCommand[*filesapi.FileResponseAPIModelV1](
 		requestContext, data.Client, common.V1, updateStmt,
@@ -118,7 +123,8 @@ func handleV1DeferredUpload(requestContext *common.RequestContext, data *process
 
 // getFileAttribute retrieves a file attribute from the V1 backend using get_file_attribute.
 func getFileAttribute(requestContext *common.RequestContext, data *process.ProcessData, fileName, fieldName string) (string, error) {
-	statement := fmt.Sprintf("get_file_attribute(name=\"%s\", field_name=\"%s\")", fileName, fieldName)
+	statement := fmt.Sprintf("get_file_attribute(name=%s, field_name=%s)",
+		utils.EscapeString(fileName), utils.EscapeString(fieldName))
 	response, err := corehelper.RunOpCommand[*upload.GetFilePresignedPutAPIModelV1](
 		requestContext, data.Client, common.V1, statement,
 	)

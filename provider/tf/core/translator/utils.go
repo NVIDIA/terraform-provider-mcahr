@@ -23,21 +23,75 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// ListSliceFromTFModel extracts a string slice from types.List, returning empty slice for null/unknown
-func ListSliceFromTFModel(ctx context.Context, tfList types.List) []string {
+// ListSliceFromTFModel extracts a string slice from types.List, returning a
+// nil slice for null/unknown.
+//
+// Conversion failures are returned rather than discarded. These helpers feed
+// SetArrayField for attributes including allowed_entities, approvers, editors
+// and allowed_tags: swallowing the diagnostics turned a failed conversion into
+// an empty list, which sends allowed_entities=[] and wipes the entity's
+// authorization list instead of failing the apply.
+func ListSliceFromTFModel(ctx context.Context, tfList types.List) ([]string, error) {
+	// nil, not an empty slice: ElementsAs left the result nil for null/unknown
+	// lists, and callers marshal these straight to JSON where nil renders as
+	// null and []string{} renders as []. Preserving nil keeps the wire format
+	// identical -- only the error handling changes here.
+	if tfList.IsNull() || tfList.IsUnknown() {
+		return nil, nil
+	}
+
 	var result []string
-	tfList.ElementsAs(ctx, &result, false)
-	return result
+	if diags := tfList.ElementsAs(ctx, &result, false); diags.HasError() {
+		return nil, diagnosticsError("list", diags)
+	}
+
+	return result, nil
 }
 
-// SetSliceFromTFModel extracts a string slice from types.Set, returning empty slice for null/unknown
-func SetSliceFromTFModel(ctx context.Context, tfSet types.Set) []string {
+// SetSliceFromTFModel extracts a string slice from types.Set, returning a nil
+// slice for null/unknown. See ListSliceFromTFModel on error handling.
+func SetSliceFromTFModel(ctx context.Context, tfSet types.Set) ([]string, error) {
+	if tfSet.IsNull() || tfSet.IsUnknown() {
+		return nil, nil
+	}
+
 	var result []string
-	tfSet.ElementsAs(ctx, &result, false)
-	return result
+	if diags := tfSet.ElementsAs(ctx, &result, false); diags.HasError() {
+		return nil, diagnosticsError("set", diags)
+	}
+
+	return result, nil
+}
+
+// ListSlicesFromTFModel extracts several string slices in one call, keyed by
+// attribute name so a failure says which attribute could not be converted and
+// the builder chain at the call site stays readable.
+func ListSlicesFromTFModel(ctx context.Context, lists map[string]types.List) (map[string][]string, error) {
+	result := make(map[string][]string, len(lists))
+
+	for name, tfList := range lists {
+		slice, err := ListSliceFromTFModel(ctx, tfList)
+		if err != nil {
+			return nil, fmt.Errorf("attribute %q: %w", name, err)
+		}
+		result[name] = slice
+	}
+
+	return result, nil
+}
+
+// diagnosticsError renders element-conversion diagnostics as an error.
+func diagnosticsError(kind string, diags diag.Diagnostics) error {
+	messages := make([]string, 0, len(diags.Errors()))
+	for _, d := range diags.Errors() {
+		messages = append(messages, fmt.Sprintf("%s: %s", d.Summary(), d.Detail()))
+	}
+
+	return fmt.Errorf("failed to convert %s elements: %s", kind, strings.Join(messages, "; "))
 }
 
 // EscapeString escapes strings for op lang format using strconv.Quote

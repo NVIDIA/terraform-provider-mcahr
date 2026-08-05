@@ -62,7 +62,7 @@ func (t *ReportTemplateTranslatorCommon) buildCreateStatement(requestContext *co
 
 func (t *ReportTemplateTranslatorCommon) buildReadStatement(tfModel *reporttemplatetf.ReportTemplateTFModel) string {
 	name := tfModel.Name.ValueString()
-	return fmt.Sprintf("get_report_template_class(report_template_name=\"%s\")", name)
+	return fmt.Sprintf("get_report_template_class(report_template_name=%s)", utils.EscapeString(name))
 }
 
 func (t *ReportTemplateTranslatorCommon) buildUpdateStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, tfModel *reporttemplatetf.ReportTemplateTFModel) string {
@@ -71,7 +71,7 @@ func (t *ReportTemplateTranslatorCommon) buildUpdateStatement(requestContext *co
 
 func (t *ReportTemplateTranslatorCommon) buildDeleteStatement(tfModel *reporttemplatetf.ReportTemplateTFModel) string {
 	name := tfModel.Name.ValueString()
-	return fmt.Sprintf("delete_report_template(report_template_name=\"%s\")", name)
+	return fmt.Sprintf("delete_report_template(report_template_name=%s)", utils.EscapeString(name))
 }
 
 func (t *ReportTemplateTranslatorCommon) buildReportTemplateStatement(requestContext *common.RequestContext, translationData *translator.TranslationData, statementName string, tfModel *reporttemplatetf.ReportTemplateTFModel) string {

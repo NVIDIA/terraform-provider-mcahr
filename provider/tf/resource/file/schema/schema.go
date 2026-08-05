@@ -75,7 +75,7 @@ func (f *FileSchema) GetSchema() schema.Schema {
 
 	// File source attributes (mutually exclusive)
 	builder.AddAttribute("input_file", schema.StringAttribute{
-		MarkdownDescription: "The local source of a distributed File object. (conflicts with inline_data)",
+		MarkdownDescription: "The source of a distributed File object: a local path, or an `https://` URL to download. Plaintext `http://` URLs are rejected, because the downloaded content becomes the stored file and is not integrity-checked. (conflicts with inline_data)",
 		Optional:            true,
 		Computed:            true,
 		Validators: []validator.String{

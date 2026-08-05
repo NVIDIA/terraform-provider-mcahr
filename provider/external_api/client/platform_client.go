@@ -16,6 +16,8 @@
 package client
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -84,8 +86,21 @@ func (c *PlatformClient) ExecuteRequest(requestCtx *common.RequestContext, reque
 }
 
 func (c *PlatformClient) executeWithRetries(requestCtx *common.RequestContext, request *PlatformClientRequest) (*PlatformClientResponse, error) {
+
+	// Buffer the body up front. request.Body is a single-use io.Reader that
+	// the first attempt drains, so every retry after it used to send an empty
+	// body -- a write silently degrading into a no-op rather than failing.
+	var body []byte
+	if request.Body != nil {
+		var err error
+		body, err = io.ReadAll(request.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read request body: %w", err)
+		}
+	}
+
 	for attempt := 0; ; attempt++ {
-		resp, err := c.executeRetriableRequest(requestCtx, request)
+		resp, err := c.executeRetriableRequest(requestCtx, request, body)
 		if err == nil {
 			return resp, nil
 		}
@@ -97,11 +112,19 @@ func (c *PlatformClient) executeWithRetries(requestCtx *common.RequestContext, r
 	}
 }
 
-func (c *PlatformClient) executeRetriableRequest(requestCtx *common.RequestContext, request *PlatformClientRequest) (platformResp *PlatformClientResponse, err error) {
+func (c *PlatformClient) executeRetriableRequest(requestCtx *common.RequestContext, request *PlatformClientRequest, body []byte) (platformResp *PlatformClientResponse, err error) {
+
+	// Every attempt gets its own reader over the buffered bytes. Requests that
+	// started with no body keep having none, so Content-Length is unaffected.
+	var bodyReader io.Reader
+	if request.Body != nil {
+		bodyReader = bytes.NewReader(body)
+	}
+
 	resp, err := c.httpClient.Execute(requestCtx, &http_client.HTTPRequest{
 		Method: request.Method,
 		URL:    c.baseURL + request.Endpoint,
-		Body:   request.Body,
+		Body:   bodyReader,
 		Headers: map[string]string{
 			"Authorization": "Bearer " + c.apiToken,
 			"Content-Type":  "application/json; charset=utf-8",

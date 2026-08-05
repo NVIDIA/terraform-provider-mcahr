@@ -61,10 +61,21 @@ func TestIgnoreWhitespaceModifier_PlanModifyString(t *testing.T) {
 		{
 			name:              "multiple spaces normalized - should use state value",
 			planValue:         types.StringValue("hello    world    test"),
-			stateValue:        types.StringValue("helloworld test"),
+			stateValue:        types.StringValue("hello world test"),
 			configValue:       types.StringValue("hello    world    test"),
-			expectedPlanValue: types.StringValue("helloworld test"),
+			expectedPlanValue: types.StringValue("hello world test"),
 			shouldModify:      true,
+		},
+		{
+			// Deleting a space is a real edit, not a formatting difference:
+			// `echo a b` and `echo ab` run differently. Suppressing this diff
+			// meant the backend kept executing the old command.
+			name:              "removed space is a real change - no modification",
+			planValue:         types.StringValue("hello world"),
+			stateValue:        types.StringValue("helloworld"),
+			configValue:       types.StringValue("hello world"),
+			expectedPlanValue: types.StringValue("hello world"),
+			shouldModify:      false,
 		},
 		{
 			name:              "completely different strings - no modification",
@@ -141,10 +152,18 @@ func TestIgnoreWhitespaceModifier_PlanModifyString(t *testing.T) {
 		{
 			name:              "complex whitespace differences - should use state value",
 			planValue:         types.StringValue("SELECT * FROM table WHERE id = 1"),
+			stateValue:        types.StringValue("SELECT  *  FROM  table\tWHERE id = 1"),
+			configValue:       types.StringValue("SELECT * FROM table WHERE id = 1"),
+			expectedPlanValue: types.StringValue("SELECT  *  FROM  table\tWHERE id = 1"),
+			shouldModify:      true,
+		},
+		{
+			name:              "all spaces stripped is a real change - no modification",
+			planValue:         types.StringValue("SELECT * FROM table WHERE id = 1"),
 			stateValue:        types.StringValue("SELECT*FROMtableWHEREid=1"),
 			configValue:       types.StringValue("SELECT * FROM table WHERE id = 1"),
-			expectedPlanValue: types.StringValue("SELECT*FROMtableWHEREid=1"),
-			shouldModify:      true,
+			expectedPlanValue: types.StringValue("SELECT * FROM table WHERE id = 1"),
+			shouldModify:      false,
 		},
 	}
 
@@ -194,14 +213,15 @@ func TestRemoveWhitespace(t *testing.T) {
 			expected: "helloworld",
 		},
 		{
+			// A single separating space is meaningful and is preserved.
 			name:     "single space",
 			input:    "hello world",
-			expected: "helloworld",
+			expected: "hello world",
 		},
 		{
-			name:     "multiple spaces",
+			name:     "multiple spaces collapse to one",
 			input:    "hello   world",
-			expected: "helloworld",
+			expected: "hello world",
 		},
 		{
 			name:     "leading space",
@@ -216,7 +236,12 @@ func TestRemoveWhitespace(t *testing.T) {
 		{
 			name:     "spaces everywhere",
 			input:    "  hello   world  ",
-			expected: "helloworld",
+			expected: "hello world",
+		},
+		{
+			name:     "tabs and newlines are whitespace too",
+			input:    "hello\t\nworld",
+			expected: "hello world",
 		},
 		{
 			name:     "empty string",
@@ -230,8 +255,8 @@ func TestRemoveWhitespace(t *testing.T) {
 		},
 		{
 			name:     "mixed content with spaces",
-			input:    "SELECT * FROM table WHERE id = 1",
-			expected: "SELECT*FROMtableWHEREid=1",
+			input:    "SELECT  *  FROM table WHERE id = 1",
+			expected: "SELECT * FROM table WHERE id = 1",
 		},
 	}
 

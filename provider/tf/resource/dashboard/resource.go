@@ -119,7 +119,7 @@ func (r *DashboardResource) Delete(ctx context.Context, req resource.DeleteReque
 }
 
 func (r *DashboardResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	coreresource.ExecuteImportState(ctx, req, resp, resourceType)
+	coreresource.ExecuteImportState(ctx, req, resp, resourceType, r.schema)
 }
 
 func (r *DashboardResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
